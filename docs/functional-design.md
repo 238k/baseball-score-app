@@ -73,13 +73,13 @@ interface Lineup {
   battingOrder: number;               // 打順（1〜9）
   cycle: number;                      // 打者一巡サイクル（1〜、同じ打順の2人目以降は2）
   playerName: string;                 // 選手名
-  position: FieldingPosition;         // 守備位置（1〜9）
+  position: FieldingPosition;         // 守備位置（1〜9、10=指名打者）
   isStarter: boolean;                 // 先発かどうか
   enteredInning?: number;             // 途中出場時のイニング番号
   substitutionType?: SubstitutionType; // 交代種別
 }
 
-type FieldingPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9; // 投捕一二三遊左中右
+type FieldingPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10; // 投捕一二三遊左中右・指名打者
 type SubstitutionType = '代打' | '代走' | '守備交代' | '投手交代';
 ```
 

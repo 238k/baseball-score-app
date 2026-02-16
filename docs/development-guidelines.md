@@ -53,7 +53,7 @@ interface Game {
 
 // 型エイリアス: Union型・プリミティブ型
 type GameStatus = 'in_progress' | 'completed';
-type FieldingPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+type FieldingPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10; // 10=指名打者(DH)
 ```
 
 **型定義の集約**: すべての共有型は `types/` ディレクトリに置き、インラインで型を定義しない。
@@ -447,7 +447,7 @@ test('試合設定 → スコア入力 → 成績確認の基本フロー', asyn
 
 [推奨] この成績計算は毎レンダーで実行されます。useMemoでメモ化を検討してください。
 
-[提案] FieldingPositionをliteral union typeにすると、1〜9以外の値を型レベルで防げます。
+[提案] FieldingPositionをliteral union typeにすると、定義外の値を型レベルで防げます。
 
 [質問] この走者IDの管理方法はlineupIdを使う想定でしょうか？
 ```

@@ -16,9 +16,10 @@ const FIELDING_POSITION_LABELS: Record<FieldingPosition, string> = {
   7: '左翼 (LF)',
   8: '中堅 (CF)',
   9: '右翼 (RF)',
+  10: '指名打者 (DH)',
 };
 
-const FIELDING_POSITIONS: FieldingPosition[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const FIELDING_POSITIONS: FieldingPosition[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 // 先発9名の初期値を生成
 export function createInitialLineup(): LineupRow[] {

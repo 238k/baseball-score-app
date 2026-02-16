@@ -1,5 +1,5 @@
-// 守備位置: 1=投手 2=捕手 3=一塁 4=二塁 5=三塁 6=遊撃 7=左翼 8=中堅 9=右翼
-export type FieldingPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+// 守備位置: 1=投手 2=捕手 3=一塁 4=二塁 5=三塁 6=遊撃 7=左翼 8=中堅 9=右翼 10=指名打者
+export type FieldingPosition = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 
 export type GameStatus = 'in_progress' | 'completed';
 
