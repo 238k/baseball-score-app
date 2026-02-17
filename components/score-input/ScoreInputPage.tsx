@@ -6,7 +6,7 @@ import { useGameStore } from '@/store/gameStore';
 import { useScoreStore } from '@/store/scoreStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnlineSync } from '@/hooks/useOnlineSync';
-import { GameHeader } from './GameHeader';
+import { GameStatusPanel } from './GameStatusPanel';
 import { CurrentBatterInfo } from './CurrentBatterInfo';
 import { PitchInputPanel } from './PitchInputPanel';
 import { ResultInputPanel } from './ResultInputPanel';
@@ -36,6 +36,8 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
     pitches,
     plateAppearances,
     phase,
+    homeScore,
+    awayScore,
     recordPitch,
     recordResult,
     confirmRunners,
@@ -132,98 +134,110 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col">
+    <div className="h-screen overflow-hidden flex flex-col bg-zinc-50">
       {/* オフラインバナー */}
       {!isOnline && (
-        <div className="bg-amber-500 text-white text-xs text-center py-1 px-3">
+        <div className="bg-amber-500 text-white text-xs text-center py-1 px-3 flex-shrink-0">
           オフラインで動作中 · 入力はローカルに保存されます
         </div>
       )}
 
-      {/* ヘッダー */}
-      <GameHeader
-        gameId={gameId}
-        inning={currentInning}
-        topBottom={currentTopBottom}
-        outs={outs}
-        runnersOnBase={runnersOnBase}
-        homeTeamName={game.homeTeamName}
-        awayTeamName={game.awayTeamName}
-      />
-
-      {/* スコアシート（NPB準拠グリッド） */}
-      <div className="max-h-[calc(9*5rem+1.75rem)] overflow-y-auto flex-shrink-0">
-        <ScoreSheet
-          attackingSide={attackingSide}
-          attackingLineup={attackingLineup}
-          plateAppearances={plateAppearances}
-          currentInning={currentInning}
-          currentTopBottom={currentTopBottom}
-          currentBatterIndex={currentBatterIndex}
-        />
-      </div>
-
-      {/* 現在打者情報 */}
-      <CurrentBatterInfo
-        battingOrder={battingOrder}
-        batterName={batterName}
-        pitches={pitches}
-      />
-
-      {/* 入力パネル */}
-      <div className="flex-1 overflow-auto">
-        {/* 交代ボタン（pitching フェーズのみ） */}
-        {phase === 'pitching' && (
-          <div className="px-4 pt-3">
-            <button
-              type="button"
-              onClick={() => setIsSubstitutionOpen(true)}
-              className="min-h-[40px] px-4 rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-50 transition-colors"
-            >
-              選手交代
-            </button>
+      {/* メインコンテンツ: 左右2ペイン */}
+      <div className="flex flex-1 min-h-0">
+        {/* 左ペイン: スコアシート */}
+        <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden bg-white">
+          <div className="h-full">
+            <ScoreSheet
+              attackingSide={attackingSide}
+              attackingLineup={attackingLineup}
+              plateAppearances={plateAppearances}
+              currentInning={currentInning}
+              currentTopBottom={currentTopBottom}
+              currentBatterIndex={currentBatterIndex}
+              currentPitches={pitches}
+            />
           </div>
-        )}
-
-        {phase === 'inning_end' ? (
-          <div className="p-6 flex flex-col items-center gap-4">
-            <p className="text-lg font-bold text-zinc-700">3アウト — 攻守交代</p>
-            <button
-              type="button"
-              onClick={advanceInning}
-              className="min-h-[56px] px-10 rounded-lg bg-zinc-800 text-white font-bold text-lg hover:bg-zinc-700 active:opacity-70 transition-colors"
-            >
-              攻守交代
-            </button>
-          </div>
-        ) : phase === 'runner_advance' ? (
-          <RunnerAdvancePanel
-            runners={runnersForAdvancePanel}
-            batterName={batterName}
-            batterDest={pendingBatterDestination}
-            onConfirm={handleConfirmRunners}
-          />
-        ) : phase === 'result' ? (
-          <ResultInputPanel onResult={handleResult} />
-        ) : (
-          <PitchInputPanel onPitch={handlePitch} />
-        )}
-
-        {/* Undo ボタン */}
-        <div className="px-4 pb-4">
-          <button
-            type="button"
-            onClick={undo}
-            disabled={undoStack.length === 0}
-            className="w-full min-h-[44px] rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            ↩ 取り消し（Undo）
-          </button>
         </div>
 
-        {/* 打席ログ */}
-        <div className="border-t border-zinc-200">
-          <ScoreLog plateAppearances={plateAppearances} />
+        {/* 右ペイン: 試合状況 + 操作UI */}
+        <div className="w-80 flex-shrink-0 flex flex-col border-l border-zinc-200">
+          {/* 右上: 試合状況パネル */}
+          <GameStatusPanel
+            inning={currentInning}
+            topBottom={currentTopBottom}
+            outs={outs}
+            runnersOnBase={runnersOnBase}
+            homeTeamName={game.homeTeamName}
+            awayTeamName={game.awayTeamName}
+            homeScore={homeScore}
+            awayScore={awayScore}
+            pitches={pitches}
+          />
+
+          {/* 右下: 操作UI */}
+          <div className="flex-1 overflow-y-auto bg-zinc-50">
+            {/* 現在打者情報 */}
+            <CurrentBatterInfo
+              battingOrder={battingOrder}
+              batterName={batterName}
+              pitches={pitches}
+            />
+
+            {/* 交代ボタン（pitching フェーズのみ） */}
+            {phase === 'pitching' && (
+              <div className="px-4 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setIsSubstitutionOpen(true)}
+                  className="min-h-[40px] px-4 rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-50 transition-colors"
+                >
+                  選手交代
+                </button>
+              </div>
+            )}
+
+            {/* 入力パネル */}
+            {phase === 'inning_end' ? (
+              <div className="p-6 flex flex-col items-center gap-4">
+                <p className="text-lg font-bold text-zinc-700">3アウト — 攻守交代</p>
+                <button
+                  type="button"
+                  onClick={advanceInning}
+                  className="min-h-[56px] px-10 rounded-lg bg-zinc-800 text-white font-bold text-lg hover:bg-zinc-700 active:opacity-70 transition-colors"
+                >
+                  攻守交代
+                </button>
+              </div>
+            ) : phase === 'runner_advance' ? (
+              <RunnerAdvancePanel
+                runners={runnersForAdvancePanel}
+                batterName={batterName}
+                batterDest={pendingBatterDestination}
+                onConfirm={handleConfirmRunners}
+              />
+            ) : phase === 'result' ? (
+              <ResultInputPanel onResult={handleResult} />
+            ) : (
+              <PitchInputPanel onPitch={handlePitch} />
+            )}
+
+            {/* Undo ボタン */}
+            <div className="px-4 pb-4">
+              <button
+                type="button"
+                onClick={undo}
+                disabled={undoStack.length === 0}
+                className="w-full min-h-[44px] rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                ↩ 取り消し（Undo）
+              </button>
+            </div>
+
+            {/* 打席ログ */}
+            <div className="border-t border-zinc-200">
+              <ScoreLog plateAppearances={plateAppearances} />
+            </div>
+          </div>
         </div>
       </div>
 
