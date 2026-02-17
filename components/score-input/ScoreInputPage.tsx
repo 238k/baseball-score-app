@@ -7,6 +7,7 @@ import { useScoreStore } from '@/store/scoreStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnlineSync } from '@/hooks/useOnlineSync';
 import { GameStatusPanel } from './GameStatusPanel';
+import { Button } from '@/components/ui/button';
 import { CurrentBatterInfo } from './CurrentBatterInfo';
 import { PitchInputPanel } from './PitchInputPanel';
 import { ResultInputPanel } from './ResultInputPanel';
@@ -186,13 +187,14 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
             {/* 交代ボタン（pitching フェーズのみ） */}
             {phase === 'pitching' && (
               <div className="px-4 pt-3">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setIsSubstitutionOpen(true)}
-                  className="min-h-[40px] px-4 rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-50 transition-colors"
+                  className="min-h-[40px] px-4 rounded-lg text-zinc-600 text-sm font-medium"
                 >
                   選手交代
-                </button>
+                </Button>
               </div>
             )}
 
@@ -200,13 +202,13 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
             {phase === 'inning_end' ? (
               <div className="p-6 flex flex-col items-center gap-4">
                 <p className="text-lg font-bold text-zinc-700">3アウト — 攻守交代</p>
-                <button
+                <Button
                   type="button"
                   onClick={advanceInning}
                   className="min-h-[56px] px-10 rounded-lg bg-zinc-800 text-white font-bold text-lg hover:bg-zinc-700 active:opacity-70 transition-colors"
                 >
                   攻守交代
-                </button>
+                </Button>
               </div>
             ) : phase === 'runner_advance' ? (
               <RunnerAdvancePanel
@@ -223,14 +225,15 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
             {/* Undo ボタン */}
             <div className="px-4 pb-4">
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={undo}
                 disabled={undoStack.length === 0}
-                className="w-full min-h-[44px] rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="w-full min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
               >
                 ↩ 取り消し（Undo）
-              </button>
+              </Button>
             </div>
 
             {/* 打席ログ */}

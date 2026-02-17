@@ -1,6 +1,7 @@
 'use client';
 
 import type { PlateResult } from '@/types/score';
+import { Button } from '@/components/ui/button';
 
 interface ResultGroup {
   label: string;
@@ -44,14 +45,14 @@ export function ResultInputPanel({ onResult }: ResultInputPanelProps) {
           <p className="text-xs text-zinc-400 mb-1.5">{label}</p>
           <div className="flex flex-wrap gap-2">
             {results.map((result) => (
-              <button
+              <Button
                 key={result}
                 type="button"
                 onClick={() => onResult(result)}
                 className={`min-h-[48px] px-4 rounded-lg font-medium text-sm transition-opacity active:opacity-70 ${colorClass}`}
               >
                 {result}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

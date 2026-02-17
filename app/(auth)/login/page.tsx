@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,33 +50,29 @@ export default function LoginPage() {
         <p className="text-sm text-zinc-500 mb-8">野球スコアブックにサインイン</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-zinc-700 mb-1">
-              メールアドレス
-            </label>
-            <input
+          <div className="space-y-1">
+            <Label htmlFor="email" className="text-zinc-700">メールアドレス</Label>
+            <Input
               id="email"
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full min-h-[44px] px-3 rounded-md border border-zinc-300 bg-white text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-[44px]"
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-zinc-700 mb-1">
-              パスワード
-            </label>
-            <input
+          <div className="space-y-1">
+            <Label htmlFor="password" className="text-zinc-700">パスワード</Label>
+            <Input
               id="password"
               type="password"
               required
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full min-h-[44px] px-3 rounded-md border border-zinc-300 bg-white text-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-[44px]"
             />
           </div>
 
@@ -81,13 +80,13 @@ export default function LoginPage() {
             <p className="text-sm text-red-600">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={isLoading}
-            className="w-full min-h-[44px] rounded-md bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full min-h-[44px] rounded-md bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors"
           >
             {isLoading ? 'ログイン中...' : 'ログイン'}
-          </button>
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-zinc-500">

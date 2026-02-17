@@ -9,6 +9,7 @@ import { LineupSection, createInitialLineup } from './LineupSection';
 import { useGameStore } from '@/store/gameStore';
 import { useAuth } from '@/hooks/useAuth';
 import type { FieldingPosition } from '@/types/game';
+import { Button } from '@/components/ui/button';
 
 // バリデーションスキーマ
 const CreateGameSchema = z.object({
@@ -183,13 +184,13 @@ export function GameSetupForm() {
       />
 
       <div className="flex justify-end pt-4 border-t border-zinc-200">
-        <button
+        <Button
           type="submit"
           disabled={!canSubmit}
-          className="min-h-[44px] px-8 rounded-md bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          className="min-h-[44px] px-8 rounded-md bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors"
         >
           試合開始
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import type { PitchType } from '@/types/score';
+import { Button } from '@/components/ui/button';
 
 interface PitchButton {
   type: PitchType;
@@ -27,14 +28,14 @@ export function PitchInputPanel({ onPitch }: PitchInputPanelProps) {
       <p className="text-xs font-medium text-zinc-500 mb-3">投球入力</p>
       <div className="grid grid-cols-3 gap-3">
         {PITCH_BUTTONS.map(({ type, label, colorClass }) => (
-          <button
+          <Button
             key={type}
             type="button"
             onClick={() => onPitch(type)}
             className={`min-h-[64px] rounded-lg font-bold text-base transition-opacity active:opacity-70 ${colorClass}`}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
