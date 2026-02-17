@@ -109,7 +109,7 @@ gh issue create \
 EOF
 )" \
   --label "priority: high,type: bug,area: store/logic" \
-  --add-assignee "username"
+  --assignee "username"
 ```
 
 **ラベルの選び方の基準**:
