@@ -20,7 +20,7 @@ function countBalls(pitches: Pitch[]): number {
 
 function countStrikes(pitches: Pitch[]): number {
   return pitches.filter(
-    (p) => p.type === 'strike_swinging' || p.type === 'strike_looking' || p.type === 'foul',
+    (p) => p.type === 'strike_swinging' || p.type === 'strike_looking',
   ).length;
 }
 
