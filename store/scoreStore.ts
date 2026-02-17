@@ -25,6 +25,8 @@ interface ScoreState {
   plateAppearances: PlateAppearance[];   // 全確定打席
   phase: ScorePhase;
   sequenceCounter: number;               // 打席通し番号カウンター
+  homeScore: number;                     // ホームチームの得点
+  awayScore: number;                     // アウェイチームの得点
 
   // runner_advance フェーズで使用（フェーズ外では null）
   pendingBatterLineupId: string | null;
@@ -60,6 +62,8 @@ function snapshot(state: ScoreState): ScoreSnapshot {
     sequenceCounter: state.sequenceCounter,
     pendingBatterLineupId: state.pendingBatterLineupId,
     pendingBatterDestination: state.pendingBatterDestination,
+    homeScore: state.homeScore,
+    awayScore: state.awayScore,
   };
 }
 
@@ -91,6 +95,7 @@ function confirmPlateAppearance(
     battingOrder,
     result,
     pitchCount: state.pitches.length,
+    pitches: [...state.pitches],
     sequenceInGame: newSeq,
   };
 }
@@ -166,6 +171,8 @@ export const useScoreStore = create<ScoreState>()(
   plateAppearances: [],
   phase: 'pitching',
   sequenceCounter: 0,
+  homeScore: 0,
+  awayScore: 0,
   pendingBatterLineupId: null,
   pendingBatterDestination: null,
   undoStack: [],
@@ -182,6 +189,8 @@ export const useScoreStore = create<ScoreState>()(
       plateAppearances: [],
       phase: 'pitching',
       sequenceCounter: 0,
+      homeScore: 0,
+      awayScore: 0,
       pendingBatterLineupId: null,
       pendingBatterDestination: null,
       undoStack: [],
@@ -339,7 +348,12 @@ export const useScoreStore = create<ScoreState>()(
 
     // 打者の到達塁を配置（1〜3塁のみ; 4=得点は塁に置かない）
     const bd = state.pendingBatterDestination;
-    if (bd !== null && bd !== 4 && state.pendingBatterLineupId) {
+    let scoringRuns = 0;
+
+    if (bd === 4) {
+      // 打者が得点（本塁打など）
+      scoringRuns += 1;
+    } else if (bd !== null && state.pendingBatterLineupId) {
       newRunners[bd] = state.pendingBatterLineupId;
     }
 
@@ -348,14 +362,24 @@ export const useScoreStore = create<ScoreState>()(
     for (const [lineupId, dest] of Object.entries(destinations)) {
       if (dest === 'out') {
         additionalOuts += 1;
-      } else if (dest !== 4) {
+      } else if (dest === 4) {
+        // 走者が得点
+        scoringRuns += 1;
+      } else {
         newRunners[dest] = lineupId;
       }
-      // dest === 4（得点）→ 塁に配置しない
     }
 
     const newOuts = Math.min(state.outs + additionalOuts, 3);
     const newPhase: ScorePhase = newOuts >= 3 ? 'inning_end' : 'pitching';
+
+    // 攻撃チームに得点を加算
+    const newHomeScore = state.currentTopBottom === 'bottom'
+      ? state.homeScore + scoringRuns
+      : state.homeScore;
+    const newAwayScore = state.currentTopBottom === 'top'
+      ? state.awayScore + scoringRuns
+      : state.awayScore;
 
     set({
       runnersOnBase: newRunners,
@@ -364,6 +388,8 @@ export const useScoreStore = create<ScoreState>()(
       currentBatterIndex: newPhase === 'pitching' ? (state.currentBatterIndex + 1) % 9 : state.currentBatterIndex,
       pendingBatterLineupId: null,
       pendingBatterDestination: null,
+      homeScore: newHomeScore,
+      awayScore: newAwayScore,
       undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
     });
   },
@@ -407,6 +433,8 @@ export const useScoreStore = create<ScoreState>()(
       sequenceCounter: prev.sequenceCounter,
       pendingBatterLineupId: prev.pendingBatterLineupId,
       pendingBatterDestination: prev.pendingBatterDestination,
+      homeScore: prev.homeScore,
+      awayScore: prev.awayScore,
       undoStack: state.undoStack.slice(0, -1),
     });
   },
@@ -424,6 +452,8 @@ export const useScoreStore = create<ScoreState>()(
     plateAppearances: state.plateAppearances,
     phase: state.phase,
     sequenceCounter: state.sequenceCounter,
+    homeScore: state.homeScore,
+    awayScore: state.awayScore,
     pendingBatterLineupId: state.pendingBatterLineupId,
     pendingBatterDestination: state.pendingBatterDestination,
   }),

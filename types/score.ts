@@ -46,6 +46,7 @@ export interface PlateAppearance {
   battingOrder: number;  // 1〜9
   result: PlateResult;
   pitchCount: number;    // 総投球数
+  pitches: Pitch[];      // 一球ごとの投球記録
   sequenceInGame: number; // 試合内の打席通し番号
 }
 
@@ -81,4 +82,7 @@ export interface ScoreSnapshot {
   // runner_advance フェーズで使用
   pendingBatterLineupId: string | null;
   pendingBatterDestination: 1 | 2 | 3 | 4 | null;
+  // 得点
+  homeScore: number;
+  awayScore: number;
 }

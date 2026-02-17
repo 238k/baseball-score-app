@@ -26,6 +26,7 @@ function pa(result: PlateAppearance['result'], pitchCount = 4): PlateAppearance 
     battingOrder: 1,
     result,
     pitchCount,
+    pitches: [],
     sequenceInGame: 1,
   };
 }

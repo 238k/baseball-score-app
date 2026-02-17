@@ -13,6 +13,7 @@ const basePa: PlateAppearance = {
   battingOrder: 1,
   result: '単打',
   pitchCount: 4,
+  pitches: [],
   sequenceInGame: 1,
 };
 
