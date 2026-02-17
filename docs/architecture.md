@@ -14,10 +14,12 @@
 
 | 技術 | バージョン | 用途 | 選定理由 |
 |------|-----------|------|----------|
-| Next.js | 15.x (App Router) | フルスタックWebフレームワーク | App RouterによるSSR/CSRの柔軟な切り替え。`/games/[id]/print` の印刷専用ページを静的生成しやすい。Server Actionsでデータ取得を整理しやすい |
-| React | 19.x | UIライブラリ | Next.js 15の依存。Concurrent Features でスコア入力のレスポンスを向上 |
+| Next.js | 16.x (App Router) | フルスタックWebフレームワーク | App RouterによるSSR/CSRの柔軟な切り替え。`/games/[id]/print` の印刷専用ページを静的生成しやすい。Server Actionsでデータ取得を整理しやすい |
+| React | 19.x | UIライブラリ | Next.js 16の依存。Concurrent Features でスコア入力のレスポンスを向上 |
 | Tailwind CSS | 4.x | スタイリング | タブレット向けレスポンシブデザインをユーティリティクラスで素早く実装。印刷専用スタイル（`print:`修飾子）が標準対応 |
-| shadcn/ui | 最新 | UIコンポーネントライブラリ | Radix UIベースのアクセシブルなコンポーネント。BottomSheet・Dialog・Tooltip等をカスタマイズして入力パネルに活用 |
+| shadcn/ui | 最新 | UIコンポーネントライブラリ | Radix UIベースのアクセシブルなコンポーネント。Button・Input・Label 等を `components/ui/` で管理。`components.json` で設定 |
+| class-variance-authority | 最新 | コンポーネントバリアント管理 | shadcn/ui の Button 等で使用。variant/size のクラス合成を型安全に行う |
+| clsx + tailwind-merge | 最新 | クラス合成ユーティリティ | `cn()` 関数（`lib/utils.ts`）として提供。Tailwind クラスの競合を解決してマージする |
 | Zustand | 5.x | クライアント状態管理 | スコア入力状態・Undo履歴管理に特化したシンプルなAPIを提供。Redux比で学習コストが低く、スナップショットベースのUndoを簡潔に実装できる |
 | Supabase JS | 2.x | Supabase クライアント | PostgreSQL・Auth・RLSをJavaScriptから操作するための公式クライアント。リアルタイムサブスクリプションも提供 |
 | Serwist | 9.x | PWA / Service Worker | Next.js向けのSerwistインテグレーションでService Worker管理。WorkboxベースでキャッシュストラテジーとバックグラウンドSyncを設定できる |
@@ -225,15 +227,19 @@
 
 | ライブラリ | 用途 | バージョン管理方針 |
 |-----------|------|-------------------|
-| next | フレームワーク | `^15.0.0`（マイナーまで自動） |
+| next | フレームワーク | `^16.0.0`（マイナーまで自動） |
 | react / react-dom | UIライブラリ | `^19.0.0` |
 | @supabase/supabase-js | Supabaseクライアント | `^2.0.0` |
 | zustand | 状態管理 | `^5.0.0` |
-| @serwist/next | PWA | `^9.0.0` |
 | tailwindcss | スタイリング | `^4.0.0` |
-| zod | バリデーション | `^3.0.0` |
-| vitest | テスト | `~3.0.0`（パッチのみ自動） |
-| @playwright/test | E2Eテスト | `^1.0.0` |
+| zod | バリデーション | `^4.0.0` |
+| class-variance-authority | shadcn/ui バリアント管理 | 最新 |
+| clsx | クラス合成 | 最新 |
+| tailwind-merge | Tailwind クラスマージ | 最新 |
+| lucide-react | アイコンライブラリ | 最新 |
+| @radix-ui/react-slot | shadcn/ui asChild 実装 | 最新 |
+| @radix-ui/react-label | shadcn/ui Label 実装 | 最新 |
+| vitest | テスト | `^4.0.0`（マイナーまで自動） |
 | typescript | 型チェック | `~5.0.0`（パッチのみ自動） |
 | eslint | Linting | `^9.0.0` |
 

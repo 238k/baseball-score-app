@@ -19,110 +19,83 @@ baseball-score-app/
 │   │       │   └── page.tsx    # 成績集計画面
 │   │       └── print/
 │   │           └── page.tsx    # 印刷用ビュー
+│   ├── offline/
+│   │   └── page.tsx            # オフライン時フォールバック
 │   ├── layout.tsx              # ルートレイアウト（PWA・認証Provider）
+│   ├── manifest.ts             # PWAマニフェスト（動的生成）
 │   ├── page.tsx                # ホーム（試合一覧）
-│   └── globals.css             # グローバルスタイル（Tailwind imports）
+│   ├── sw-register.tsx         # Service Worker 登録コンポーネント
+│   └── globals.css             # グローバルスタイル（Tailwind + shadcn CSS変数）
 │
 ├── components/                 # 再利用可能なReactコンポーネント
-│   ├── scorebook/              # スコアブック専用コンポーネント
+│   ├── scorebook/              # スコアブック専用コンポーネント（独自実装・shadcn非対象）
 │   │   ├── ScoreSheet.tsx      # スコアシート全体
-│   │   ├── ScoreCell.tsx       # 打席セル（ダイヤモンド描画）
-│   │   ├── Diamond.tsx         # 菱形SVGと走路表示
-│   │   ├── BaseRunner.tsx      # 塁上走者インジケーター
-│   │   └── InningHeader.tsx    # イニングヘッダー行
-│   ├── input/                  # スコア入力パネル
+│   │   ├── ScoreCell.tsx       # 打席セル（投球記録 + ダイヤモンド描画）
+│   │   └── Diamond.tsx         # 菱形SVGと走路表示
+│   ├── score-input/            # スコア入力画面コンポーネント
+│   │   ├── ScoreInputPage.tsx  # 入力画面レイアウト（左右2ペイン）
+│   │   ├── GameStatusPanel.tsx # 右上: 試合状況（イニング・BSO・スコア・ランナー）
+│   │   ├── CurrentBatterInfo.tsx
 │   │   ├── PitchInputPanel.tsx   # 一球入力パネル
 │   │   ├── ResultInputPanel.tsx  # 打席結果入力パネル
-│   │   ├── BaseEventPanel.tsx    # 走者進塁入力パネル
-│   │   └── SubstitutionPanel.tsx # 選手交代入力パネル
+│   │   ├── RunnerAdvancePanel.tsx # 走者進塁入力パネル
+│   │   ├── SubstitutionPanel.tsx # 選手交代パネル（モーダル）
+│   │   ├── ScoreLog.tsx        # 打席ログ一覧
+│   │   └── GameHeader.tsx      # 旧ヘッダー（後方互換用）
+│   ├── game-setup/             # 試合設定フォーム
+│   │   ├── GameSetupForm.tsx   # 試合設定フォーム（コントローラー）
+│   │   ├── TeamInfoSection.tsx # チーム情報入力
+│   │   └── LineupSection.tsx   # ラインナップ入力
+│   ├── game/                   # 試合一覧コンポーネント
+│   │   └── GameCard.tsx        # 試合一覧カード
 │   ├── stats/                  # 成績表示コンポーネント
 │   │   ├── BattingStatsTable.tsx
 │   │   └── PitchingStatsTable.tsx
-│   ├── game/                   # 試合設定・一覧コンポーネント
-│   │   ├── GameCard.tsx        # 試合一覧カード
-│   │   ├── GameSetupForm.tsx   # 試合設定フォーム
-│   │   └── LineupForm.tsx      # オーダー入力フォーム
+│   ├── print/                  # 印刷ビューコンポーネント
+│   │   └── PrintView.tsx
+│   ├── dev/                    # 開発用コンポーネント（本番では非表示）
+│   │   └── QuickStartButton.tsx
 │   └── ui/                     # shadcn/ui ベース汎用コンポーネント
-│       ├── button.tsx
-│       ├── dialog.tsx
-│       ├── sheet.tsx           # BottomSheet（入力パネル用）
-│       └── toast.tsx
+│       ├── button.tsx          # Button（CVA + Radix Slot）
+│       ├── input.tsx           # Input
+│       └── label.tsx           # Label（Radix Label）
 │
 ├── store/                      # Zustand ストア
-│   ├── scoreStore.ts           # スコア入力状態・Undo履歴
-│   ├── gameStore.ts            # 試合・イニング状態
-│   └── lineupStore.ts          # ラインナップ状態
+│   ├── scoreStore.ts           # スコア入力状態・Undo履歴・得点管理
+│   └── gameStore.ts            # 試合・ラインナップ状態
 │
 ├── lib/                        # ビジネスロジック・ユーティリティ
 │   ├── supabase/               # Supabase 操作
 │   │   ├── client.ts           # クライアント初期化（ブラウザ用）
 │   │   ├── server.ts           # サーバーサイド用クライアント
-│   │   ├── queries/            # データ取得（SELECT）
-│   │   │   ├── games.ts
-│   │   │   ├── lineups.ts
-│   │   │   ├── plateAppearances.ts
-│   │   │   └── baseEvents.ts
-│   │   └── mutations/          # データ更新（INSERT/UPDATE/DELETE）
+│   │   ├── env.ts              # 環境変数バリデーション
+│   │   ├── types.ts            # Supabase 生成型
+│   │   └── queries/            # データ取得（SELECT）
 │   │       ├── games.ts
-│   │       ├── lineups.ts
-│   │       ├── plateAppearances.ts
-│   │       ├── pitches.ts
-│   │       └── baseEvents.ts
+│   │       └── lineups.ts
 │   ├── stats/                  # 成績計算ロジック
 │   │   ├── battingStats.ts     # 打者成績計算
-│   │   └── pitchingStats.ts    # 投手成績計算
-│   ├── sync/                   # オフライン同期
-│   │   └── offlineSync.ts      # IndexedDB操作キュー管理
-│   └── utils/                  # 汎用ユーティリティ
-│       ├── formatters.ts       # 成績フォーマット（打率3桁等）
-│       └── scoreHelpers.ts     # スコア計算補助
+│   │   ├── pitchingStats.ts    # 投手成績計算
+│   │   └── statsTypes.ts       # 成績関連の型定義
+│   ├── fixtures.ts             # テスト用フィクスチャ
+│   └── utils.ts                # 汎用ユーティリティ（cn 関数等）
 │
 ├── types/                      # TypeScript型定義
-│   ├── game.ts                 # Game, Lineup, Inning
-│   ├── score.ts                # PlateAppearance, Pitch, BaseEvent
-│   └── stats.ts                # BattingStats, PitchingStats
+│   ├── game.ts                 # Game, Lineup, FieldingPosition
+│   ├── game-setup.ts           # 試合設定フォームの型
+│   └── score.ts                # PlateAppearance, Pitch, ScoreSnapshot 等
 │
 ├── hooks/                      # カスタムReact Hooks
-│   ├── useGameData.ts          # 試合データ取得
-│   ├── useScoreInput.ts        # スコア入力操作
-│   └── useOfflineSync.ts       # オフライン同期状態
+│   ├── useAuth.ts              # 認証状態取得
+│   └── useOnlineSync.ts        # オンライン/オフライン状態監視
 │
-├── tests/                      # テストコード
-│   ├── unit/                   # ユニットテスト（Vitest）
-│   │   ├── lib/
-│   │   │   ├── stats/
-│   │   │   │   ├── battingStats.test.ts
-│   │   │   │   └── pitchingStats.test.ts
-│   │   │   └── sync/
-│   │   │       └── offlineSync.test.ts
-│   │   └── store/
-│   │       └── scoreStore.test.ts
-│   ├── integration/            # 統合テスト（Vitest + testing-library）
-│   │   ├── score-input.test.tsx
-│   │   ├── undo-flow.test.tsx
-│   │   └── substitution.test.tsx
-│   └── e2e/                    # E2Eテスト（Playwright）
-│       ├── game-flow.spec.ts   # 試合設定〜スコア入力〜成績確認
-│       ├── offline-sync.spec.ts # オフライン→同期
-│       └── print-view.spec.ts  # 印刷ビュー
+├── middleware.ts               # Next.js ミドルウェア（認証ガード）
 │
 ├── public/                     # 静的ファイル
-│   ├── icons/                  # PWAアイコン（192x192, 512x512等）
-│   └── manifest.json           # PWAマニフェスト
-│
-├── supabase/                   # Supabase関連設定
-│   └── migrations/             # DBマイグレーションSQL
-│       ├── 001_create_games.sql
-│       ├── 002_create_lineups.sql
-│       ├── 003_create_innings.sql
-│       ├── 004_create_plate_appearances.sql
-│       ├── 005_create_pitches.sql
-│       ├── 006_create_base_events.sql
-│       └── 007_create_rls_policies.sql
+│   └── icons/                  # PWAアイコン
 │
 ├── docs/                       # プロジェクトドキュメント
 │   ├── ideas/                  # アイデア・壁打ちメモ
-│   │   └── initial-requirements.md
 │   ├── product-requirements.md # PRD
 │   ├── functional-design.md    # 機能設計書
 │   ├── architecture.md         # アーキテクチャ設計書
@@ -141,12 +114,11 @@ baseball-score-app/
 │
 ├── .env.local                  # 環境変数（gitignore対象）
 ├── .env.example                # 環境変数のサンプル（git管理）
-├── next.config.ts              # Next.js設定（Serwist PWA含む）
-├── tsconfig.json               # TypeScript設定
+├── components.json             # shadcn/ui 設定
+├── next.config.ts              # Next.js設定
+├── tsconfig.json               # TypeScript設定（パスエイリアス @/）
 ├── eslint.config.mjs           # ESLint設定
-├── postcss.config.mjs          # PostCSS設定（Tailwind用）
 ├── vitest.config.mts           # Vitest設定
-├── playwright.config.ts        # Playwright設定
 ├── package.json
 ├── package-lock.json
 ├── CLAUDE.md                   # Claude Codeプロジェクト設定
@@ -183,11 +155,14 @@ baseball-score-app/
 **役割**: 複数ページで再利用されるReactコンポーネント。ページ固有のロジックは持たず、propsで制御する。
 
 **配置ファイル**:
-- `scorebook/`: スコアブックUI専用コンポーネント（SVGダイヤモンド描画等）
-- `input/`: スコア入力パネル群（BottomSheet形式）
+- `scorebook/`: スコアブックUI専用コンポーネント（SVGダイヤモンド描画等）。shadcn/ui非対象
+- `score-input/`: スコア入力画面のコンポーネント群（入力パネル・試合状況表示等）
+- `game-setup/`: 試合設定フォームのコンポーネント
+- `game/`: 試合一覧UI（GameCard等）
 - `stats/`: 成績テーブル表示
-- `game/`: 試合設定・一覧UI
-- `ui/`: shadcn/uiベースの汎用UIプリミティブ
+- `print/`: 印刷ビュー専用コンポーネント
+- `dev/`: 開発用補助コンポーネント（本番では非表示）
+- `ui/`: shadcn/uiベースの汎用UIプリミティブ（Button/Input/Label等）
 
 **命名規則**:
 - ファイル名: PascalCase（`ScoreCell.tsx`, `BattingStatsTable.tsx`）
@@ -205,9 +180,8 @@ baseball-score-app/
 **役割**: クライアントサイドの状態管理。スコア入力状態・Undoスタック・ラインナップ等の試合中のインメモリ状態を保持する。
 
 **配置ファイル**:
-- `scoreStore.ts`: 現在イニング・アウト数・塁上走者・Undoスタック・入力中打席
-- `gameStore.ts`: 試合ID・チーム情報・ゲームステータス
-- `lineupStore.ts`: 両チームのラインナップ・現在打者インデックス
+- `scoreStore.ts`: 現在イニング・アウト数・塁上走者・Undoスタック・入力中打席・得点（homeScore/awayScore）
+- `gameStore.ts`: 試合ID・チーム情報・ラインナップ・ゲームステータス（lineupStore は統合済み）
 
 **命名規則**:
 - ファイル名: camelCase + `Store` サフィックス（`scoreStore.ts`）
@@ -241,14 +215,13 @@ lib/supabase/
 
 ```typescript
 // 例: battingStats.ts
-export function calcBattingStats(
-  plateAppearances: PlateAppearance[],
-  baseEvents: BaseEvent[]
+export function computeBattingStats(
+  plateAppearances: PlateAppearance[]
 ): BattingStats { ... }
 ```
 
-#### lib/sync/
-オフライン操作キューのIndexedDB管理。Service WorkerとメインスレッドからアクセスするAPIを提供。
+#### lib/utils.ts
+`cn()` ユーティリティ関数（clsx + tailwind-merge）を提供。shadcn/ui コンポーネントのクラス合成に使用。
 
 **命名規則**:
 - クエリ関数: `get[Resource]`, `fetch[Resource]`（例: `getGameById`）
@@ -266,9 +239,11 @@ export function calcBattingStats(
 **役割**: アプリ全体で使用するTypeScript型・インターフェースの定義。
 
 **配置ファイル**:
-- `game.ts`: `Game`, `Lineup`, `Inning`, `GameStatus`, `SubstitutionType` 等
-- `score.ts`: `PlateAppearance`, `PlateResult`, `Pitch`, `PitchType`, `BaseEvent`, `BaseEventType` 等
-- `stats.ts`: `BattingStats`, `PitchingStats` 等
+- `game.ts`: `Game`, `Lineup`, `FieldingPosition`, `GameStatus` 等
+- `game-setup.ts`: 試合設定フォームの型（`TeamInfoValues`, `LineupRow` 等）
+- `score.ts`: `PlateAppearance`, `PlateResult`, `Pitch`, `PitchType`, `ScoreSnapshot`, `ScorePhase` 等
+
+※ 成績関連の型（`BattingStats` 等）は `lib/stats/statsTypes.ts` に定義
 
 **命名規則**:
 - インターフェース名: PascalCase
@@ -286,9 +261,8 @@ export function calcBattingStats(
 **役割**: コンポーネントのロジックを分離するReact Hooks。データ取得・状態操作・副作用管理を担当。
 
 **配置ファイル**:
-- `useGameData.ts`: Supabaseから試合データを取得・キャッシュ
-- `useScoreInput.ts`: スコア入力操作のラッパー（store + mutation）
-- `useOfflineSync.ts`: オフライン状態の監視と同期トリガー
+- `useAuth.ts`: Supabase の認証状態（ユーザー情報）取得
+- `useOnlineSync.ts`: オンライン/オフライン状態の監視と同期トリガー
 
 **命名規則**:
 - ファイル名: camelCase + `use` プレフィックス（`useGameData.ts`）
@@ -299,21 +273,25 @@ export function calcBattingStats(
 
 ---
 
-### tests/ (テストコード)
+### テストコード
 
-**役割**: ユニット・統合・E2Eの3層テストを配置。
+**役割**: ユニット・統合テストをソースファイルと同階層に配置。E2Eテストは Playwright で別途管理。
+
+**配置方針**: テストファイルは対象ソースファイルと同じディレクトリに置く（コロケーション）。
 
 **構造の対応関係**:
 
 ```
-tests/unit/lib/stats/battingStats.test.ts
-         ↕ 対応
 lib/stats/battingStats.ts
+lib/stats/battingStats.test.ts   ← 同じディレクトリに配置
+
+store/scoreStore.ts
+store/scoreStore.test.ts         ← 同じディレクトリに配置
 ```
 
 **命名規則**:
-- ユニット・統合テスト: `[対象ファイル名].test.ts` / `.test.tsx`
-- E2Eテスト: `[シナリオ名].spec.ts`
+- ユニット・統合テスト: `[対象ファイル名].test.ts` / `.test.tsx`（ソースと同階層）
+- E2Eテスト: `[シナリオ名].spec.ts`（別途 Playwright プロジェクトで管理予定）
 
 ---
 
@@ -354,10 +332,10 @@ lib/stats/battingStats.ts
 
 | ファイル | 役割 |
 |---------|------|
-| `next.config.ts` | Next.js設定（Serwistプラグイン含む） |
+| `next.config.ts` | Next.js設定 |
 | `tsconfig.json` | TypeScript設定（パスエイリアス `@/` を設定） |
+| `components.json` | shadcn/ui 設定（スタイル・エイリアス・ベースカラー） |
 | `vitest.config.mts` | Vitest設定（jsdom環境、カバレッジ設定） |
-| `playwright.config.ts` | Playwright設定（iPad viewportプリセット） |
 | `eslint.config.mjs` | ESLint設定（Next.js + TypeScript strict） |
 | `.env.local` | 環境変数（gitignore対象） |
 | `.env.example` | 環境変数サンプル（git管理） |
