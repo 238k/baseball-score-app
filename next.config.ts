@@ -15,9 +15,7 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  // Turbopack を明示的に有効化して webpack config 競合の警告を抑制する
-  // Serwist は開発時 disable なので Turbopack と共存可能
-  turbopack: {},
+  /* config options here */
 };
 
 export default withSerwist(nextConfig);
