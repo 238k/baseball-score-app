@@ -7,7 +7,7 @@ import { FIXTURE_GAME } from '@/lib/fixtures';
 
 export function QuickStartButton() {
   const router = useRouter();
-  const { createGame, addLineupsForGame } = useGameStore();
+  const { createGame, addLineupsForGame, syncToSupabase } = useGameStore();
   const { user } = useAuth();
 
   function handleQuickStart() {
@@ -24,6 +24,11 @@ export function QuickStartButton() {
         isStarter: true,
       }));
       addLineupsForGame(game.id, entries);
+    }
+
+    // Supabase に非同期で同期（認証済み時のみ・オフライン時はローカル保存で継続）
+    if (user) {
+      syncToSupabase(game.id).catch(() => {});
     }
 
     router.push(`/games/${game.id}`);

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useGameStore } from '@/store/gameStore';
 import { useScoreStore } from '@/store/scoreStore';
+import { useAuth } from '@/hooks/useAuth';
+import { useOnlineSync } from '@/hooks/useOnlineSync';
 import { GameHeader } from './GameHeader';
 import { CurrentBatterInfo } from './CurrentBatterInfo';
 import { PitchInputPanel } from './PitchInputPanel';
@@ -19,7 +21,9 @@ interface ScoreInputPageProps {
 }
 
 export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
-  const { getGame, lineups, getCurrentBatter } = useGameStore();
+  const { getGame, lineups, getCurrentBatter, syncToSupabase } = useGameStore();
+  const { user } = useAuth();
+  const isOnline = useOnlineSync();
   const [isSubstitutionOpen, setIsSubstitutionOpen] = useState(false);
   const {
     initGame,
@@ -50,6 +54,12 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
       initGame(gameId);
     }
   }, [game, gameId, storeGameId, initGame]);
+
+  // マウント時に Supabase へ同期（認証済み・オンライン時のみ）
+  useEffect(() => {
+    if (!user || !isOnline) return;
+    syncToSupabase(gameId).catch(() => {});
+  }, [gameId, user, isOnline, syncToSupabase]);
 
   // 現在の攻撃チーム
   const attackingSide: 'home' | 'away' = currentTopBottom === 'top' ? 'away' : 'home';
@@ -123,6 +133,13 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col">
+      {/* オフラインバナー */}
+      {!isOnline && (
+        <div className="bg-amber-500 text-white text-xs text-center py-1 px-3">
+          オフラインで動作中 · 入力はローカルに保存されます
+        </div>
+      )}
+
       {/* ヘッダー */}
       <GameHeader
         gameId={gameId}

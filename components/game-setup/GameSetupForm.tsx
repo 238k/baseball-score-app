@@ -28,7 +28,7 @@ function createInitialLineupValues(): LineupValues {
 
 export function GameSetupForm() {
   const router = useRouter();
-  const { createGame, addLineupsForGame } = useGameStore();
+  const { createGame, addLineupsForGame, syncToSupabase } = useGameStore();
   const { user } = useAuth();
 
   const [teamInfo, setTeamInfo] = useState<TeamInfoValues>({
@@ -157,6 +157,11 @@ export function GameSetupForm() {
           isStarter: row.isStarter,
         }));
       addLineupsForGame(game.id, entries);
+    }
+
+    // Supabase に非同期で同期（認証済み・オフライン時はローカル保存で継続）
+    if (user) {
+      syncToSupabase(game.id).catch(() => {});
     }
 
     router.push(`/games/${game.id}`);

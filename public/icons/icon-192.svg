@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="32" fill="#18181b"/>
+  <!-- Diamond (baseball field) -->
+  <polygon points="96,40 152,96 96,152 40,96" fill="none" stroke="#ffffff" stroke-width="8"/>
+  <!-- Bases -->
+  <rect x="88" y="32" width="16" height="16" rx="2" fill="#ffffff" transform="rotate(45 96 40)"/>
+  <rect x="144" y="88" width="16" height="16" rx="2" fill="#ffffff" transform="rotate(45 152 96)"/>
+  <rect x="88" y="144" width="16" height="16" rx="2" fill="#ffffff" transform="rotate(45 96 152)"/>
+  <rect x="32" y="88" width="16" height="16" rx="2" fill="#ffffff" transform="rotate(45 40 96)"/>
+</svg>
