@@ -78,6 +78,65 @@ describe('scoreStore', () => {
     });
   });
 
+  describe('満塁四球・死球の得点計算', () => {
+    it('表イニングに満塁四球で awayScore が +1 される', () => {
+      useScoreStore.setState({
+        currentTopBottom: 'top',
+        runnersOnBase: { 1: RUNNER_1, 2: RUNNER_2, 3: RUNNER_3 },
+        awayScore: 0,
+        homeScore: 0,
+      });
+      for (let i = 0; i < 4; i++) {
+        useScoreStore.getState().recordPitch('ball', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      }
+      const s = useScoreStore.getState();
+      expect(s.awayScore).toBe(1);
+      expect(s.homeScore).toBe(0);
+    });
+
+    it('裏イニングに満塁死球で homeScore が +1 される', () => {
+      useScoreStore.setState({
+        currentTopBottom: 'bottom',
+        runnersOnBase: { 1: RUNNER_1, 2: RUNNER_2, 3: RUNNER_3 },
+        awayScore: 0,
+        homeScore: 0,
+      });
+      useScoreStore.getState().recordPitch('hbp', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      const s = useScoreStore.getState();
+      expect(s.homeScore).toBe(1);
+      expect(s.awayScore).toBe(0);
+    });
+
+    it('満塁でない四球・死球ではスコアが変わらない', () => {
+      useScoreStore.setState({
+        currentTopBottom: 'top',
+        runnersOnBase: { 1: RUNNER_1, 2: null, 3: null },
+        awayScore: 2,
+        homeScore: 1,
+      });
+      for (let i = 0; i < 4; i++) {
+        useScoreStore.getState().recordPitch('ball', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      }
+      const s = useScoreStore.getState();
+      expect(s.awayScore).toBe(2);
+      expect(s.homeScore).toBe(1);
+
+      // 死球も同様
+      useScoreStore.setState({
+        currentBatterIndex: useScoreStore.getState().currentBatterIndex,
+        runnersOnBase: { 1: null, 2: RUNNER_2, 3: null },
+        awayScore: 2,
+        homeScore: 1,
+        pitches: [],
+        phase: 'pitching',
+      });
+      useScoreStore.getState().recordPitch('hbp', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      const s2 = useScoreStore.getState();
+      expect(s2.awayScore).toBe(2);
+      expect(s2.homeScore).toBe(1);
+    });
+  });
+
   describe('recordPitch: 三振自動確定', () => {
     it('3ストライクで三振振りが自動確定しアウトカウントが増える', () => {
       for (let i = 0; i < 3; i++) {

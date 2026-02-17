@@ -236,6 +236,19 @@ export const useScoreStore = create<ScoreState>()(
       const pa = confirmPlateAppearance({ ...state, pitches: updatedPitches }, '四球', batterLineupId, batterName, battingOrder);
       const newRunners = applyForceAdvances(state.runnersOnBase, batterLineupId);
 
+      // 満塁四球: 3塁走者がホームイン
+      const isBasesFull =
+        state.runnersOnBase[1] !== null &&
+        state.runnersOnBase[2] !== null &&
+        state.runnersOnBase[3] !== null;
+      const scoringRuns = isBasesFull ? 1 : 0;
+      const newHomeScore = state.currentTopBottom === 'bottom'
+        ? state.homeScore + scoringRuns
+        : state.homeScore;
+      const newAwayScore = state.currentTopBottom === 'top'
+        ? state.awayScore + scoringRuns
+        : state.awayScore;
+
       set({
         pitches: [],
         plateAppearances: [...state.plateAppearances, pa],
@@ -243,6 +256,8 @@ export const useScoreStore = create<ScoreState>()(
         currentBatterIndex: (state.currentBatterIndex + 1) % 9,
         phase: 'pitching',
         sequenceCounter: state.sequenceCounter + 1,
+        homeScore: newHomeScore,
+        awayScore: newAwayScore,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
       });
       return;
@@ -253,6 +268,19 @@ export const useScoreStore = create<ScoreState>()(
       const pa = confirmPlateAppearance({ ...state, pitches: updatedPitches }, '死球', batterLineupId, batterName, battingOrder);
       const newRunners = applyForceAdvances(state.runnersOnBase, batterLineupId);
 
+      // 満塁死球: 3塁走者がホームイン
+      const isBasesFull =
+        state.runnersOnBase[1] !== null &&
+        state.runnersOnBase[2] !== null &&
+        state.runnersOnBase[3] !== null;
+      const scoringRuns = isBasesFull ? 1 : 0;
+      const newHomeScore = state.currentTopBottom === 'bottom'
+        ? state.homeScore + scoringRuns
+        : state.homeScore;
+      const newAwayScore = state.currentTopBottom === 'top'
+        ? state.awayScore + scoringRuns
+        : state.awayScore;
+
       set({
         pitches: [],
         plateAppearances: [...state.plateAppearances, pa],
@@ -260,6 +288,8 @@ export const useScoreStore = create<ScoreState>()(
         currentBatterIndex: (state.currentBatterIndex + 1) % 9,
         phase: 'pitching',
         sequenceCounter: state.sequenceCounter + 1,
+        homeScore: newHomeScore,
+        awayScore: newAwayScore,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
       });
       return;
