@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useGameStore } from '@/store/gameStore';
 import { useScoreStore } from '@/store/scoreStore';
@@ -10,6 +10,7 @@ import { PitchInputPanel } from './PitchInputPanel';
 import { ResultInputPanel } from './ResultInputPanel';
 import { RunnerAdvancePanel } from './RunnerAdvancePanel';
 import { ScoreLog } from './ScoreLog';
+import { SubstitutionPanel } from './SubstitutionPanel';
 import type { PitchType, PlateResult, RunnerDestination, RunnerInfo } from '@/types/score';
 
 interface ScoreInputPageProps {
@@ -17,7 +18,8 @@ interface ScoreInputPageProps {
 }
 
 export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
-  const { getGame, lineups } = useGameStore();
+  const { getGame, lineups, getCurrentBatter } = useGameStore();
+  const [isSubstitutionOpen, setIsSubstitutionOpen] = useState(false);
   const {
     initGame,
     gameId: storeGameId,
@@ -51,9 +53,13 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
   // 現在の攻撃チーム
   const attackingSide: 'home' | 'away' = currentTopBottom === 'top' ? 'away' : 'home';
   const gameLineups = useMemo(() => lineups[gameId] ?? [], [lineups, gameId]);
-  const attackingLineup = gameLineups
-    .filter((l) => l.side === attackingSide && l.isStarter)
-    .sort((a, b) => a.battingOrder - b.battingOrder);
+
+  // 各打順の現在の選手（cycle 最大）を取得
+  const attackingLineup = useMemo(() => {
+    return Array.from({ length: 9 }, (_, i) => {
+      return getCurrentBatter(gameId, attackingSide, i + 1) ?? null;
+    });
+  }, [gameId, attackingSide, getCurrentBatter, gameLineups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 現在の打者（ラインナップが空の場合はダミー）
   const currentBatterLineup = attackingLineup[currentBatterIndex] ?? null;
@@ -135,6 +141,19 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
       {/* 入力パネル */}
       <div className="flex-1 overflow-auto">
+        {/* 交代ボタン（pitching フェーズのみ） */}
+        {phase === 'pitching' && (
+          <div className="px-4 pt-3">
+            <button
+              type="button"
+              onClick={() => setIsSubstitutionOpen(true)}
+              className="min-h-[40px] px-4 rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-50 transition-colors"
+            >
+              選手交代
+            </button>
+          </div>
+        )}
+
         {phase === 'inning_end' ? (
           <div className="p-6 flex flex-col items-center gap-4">
             <p className="text-lg font-bold text-zinc-700">3アウト — 攻守交代</p>
@@ -176,6 +195,15 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
           <ScoreLog plateAppearances={plateAppearances} />
         </div>
       </div>
+
+      {/* 選手交代パネル */}
+      <SubstitutionPanel
+        isOpen={isSubstitutionOpen}
+        onClose={() => setIsSubstitutionOpen(false)}
+        gameId={gameId}
+        attackingSide={attackingSide}
+        currentInning={currentInning}
+      />
     </div>
   );
 }

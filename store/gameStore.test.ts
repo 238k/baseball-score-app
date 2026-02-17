@@ -64,6 +64,114 @@ describe('gameStore', () => {
     });
   });
 
+  describe('substitutePlayer', () => {
+    function setupGame() {
+      const game = useGameStore.getState().createGame({
+        homeTeamName: 'A',
+        awayTeamName: 'B',
+        date: '2026-02-17',
+      });
+      useGameStore.getState().addLineupsForGame(game.id, [
+        {
+          gameId: game.id,
+          side: 'home',
+          battingOrder: 3,
+          cycle: 1,
+          playerName: '先発三番',
+          position: 9,
+          isStarter: true,
+        },
+      ]);
+      return game;
+    }
+
+    it('代打: cycle+1 の新エントリが追加される', () => {
+      const game = setupGame();
+      useGameStore.getState().substitutePlayer({
+        gameId: game.id,
+        side: 'home',
+        battingOrder: 3,
+        playerName: '代打選手',
+        position: 7,
+        enteredInning: 5,
+        substitutionType: '代打',
+      });
+
+      const lineups = useGameStore.getState().lineups[game.id];
+      const substitutes = lineups.filter((l) => l.battingOrder === 3 && l.side === 'home');
+      expect(substitutes).toHaveLength(2);
+
+      const newEntry = substitutes.find((l) => l.cycle === 2);
+      expect(newEntry).toBeDefined();
+      expect(newEntry?.playerName).toBe('代打選手');
+      expect(newEntry?.substitutionType).toBe('代打');
+      expect(newEntry?.isStarter).toBe(false);
+    });
+
+    it('守備交代: 既存エントリの position が更新される', () => {
+      const game = setupGame();
+      useGameStore.getState().substitutePlayer({
+        gameId: game.id,
+        side: 'home',
+        battingOrder: 3,
+        playerName: '先発三番',
+        position: 4,
+        enteredInning: 5,
+        substitutionType: '守備交代',
+      });
+
+      const lineups = useGameStore.getState().lineups[game.id];
+      const entries = lineups.filter((l) => l.battingOrder === 3 && l.side === 'home');
+      // 新エントリは追加されない
+      expect(entries).toHaveLength(1);
+      expect(entries[0].position).toBe(4);
+    });
+
+    it('2回目の代打: cycle が正しく 3 になる', () => {
+      const game = setupGame();
+      useGameStore.getState().substitutePlayer({
+        gameId: game.id,
+        side: 'home',
+        battingOrder: 3,
+        playerName: '代打A',
+        position: 7,
+        enteredInning: 5,
+        substitutionType: '代打',
+      });
+      useGameStore.getState().substitutePlayer({
+        gameId: game.id,
+        side: 'home',
+        battingOrder: 3,
+        playerName: '代打B',
+        position: 8,
+        enteredInning: 7,
+        substitutionType: '代打',
+      });
+
+      const lineups = useGameStore.getState().lineups[game.id];
+      const entries = lineups.filter((l) => l.battingOrder === 3 && l.side === 'home');
+      expect(entries).toHaveLength(3);
+      expect(entries.find((l) => l.cycle === 3)?.playerName).toBe('代打B');
+    });
+
+    it('getCurrentBatter が最新 cycle を返す', () => {
+      const game = setupGame();
+      useGameStore.getState().substitutePlayer({
+        gameId: game.id,
+        side: 'home',
+        battingOrder: 3,
+        playerName: '代打選手',
+        position: 7,
+        enteredInning: 5,
+        substitutionType: '代打',
+      });
+
+      const current = useGameStore.getState().getCurrentBatter(game.id, 'home', 3);
+      expect(current?.playerName).toBe('代打選手');
+      expect(current?.cycle).toBe(2);
+    });
+  });
+
   describe('getGame', () => {
     it('存在しないIDはundefinedを返す', () => {
       expect(useGameStore.getState().getGame('not-found')).toBeUndefined();
