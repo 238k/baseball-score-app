@@ -27,20 +27,30 @@ export default function SignupPage() {
     }
 
     setIsLoading(true);
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signUp({ email, password });
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signUp({ email, password });
 
-    if (authError) {
-      setError(authError.message === 'User already registered'
-        ? 'このメールアドレスは既に登録されています'
-        : '登録に失敗しました。もう一度お試しください'
+      if (authError) {
+        setError(authError.message === 'User already registered'
+          ? 'このメールアドレスは既に登録されています'
+          : '登録に失敗しました。もう一度お試しください'
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      const isEnvError = error instanceof Error && error.message.includes('Missing');
+      setError(
+        isEnvError
+          ? '認証設定の読み込みに失敗しました。環境変数を確認してください。'
+          : '登録処理に失敗しました。時間をおいて再度お試しください。'
       );
       setIsLoading(false);
-      return;
     }
-
-    router.push('/');
-    router.refresh();
   };
 
   return (

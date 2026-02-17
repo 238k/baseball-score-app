@@ -135,7 +135,8 @@
 - **通信暗号化**: Supabase接続はすべてHTTPS/TLS 1.3
 - **アクセス制御**: Supabase RLS（Row Level Security）をすべてのテーブルに設定。`auth.uid()` ベースで自分のデータのみアクセス可能
 - **機密情報管理**:
-  - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` は`.env.local`で管理
+  - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` は`.env.local`で管理
+  - 既存環境との互換のため `NEXT_PUBLIC_SUPABASE_ANON_KEY` も許容
   - `SUPABASE_SERVICE_ROLE_KEY`（管理者権限）はサーバーサイドのみで使用し、クライアントバンドルに含めない
   - Vercelの環境変数機能で本番環境に設定
 
