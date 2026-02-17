@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SerwistProvider } from "./serwist";
+import { ServiceWorkerRegister } from "./sw-register";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,15 +44,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja">
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SerwistProvider swUrl="/sw.js">
-          {children}
-        </SerwistProvider>
+        <ServiceWorkerRegister />
+        {children}
       </body>
     </html>
   );
