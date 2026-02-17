@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FieldingPosition, SubstitutionType } from '@/types/game';
 import { useGameStore } from '@/store/gameStore';
 
@@ -21,6 +21,20 @@ const FIELDING_POSITIONS: FieldingPosition[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const SUBSTITUTION_TYPES: SubstitutionType[] = ['代打', '代走', '守備交代', '投手交代'];
 
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  const selector = [
+    'button:not([disabled])',
+    'a[href]',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    'textarea:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(',');
+
+  return Array.from(container.querySelectorAll<HTMLElement>(selector))
+    .filter((element) => !element.hasAttribute('disabled'));
+}
+
 interface SubstitutionPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -37,13 +51,12 @@ export function SubstitutionPanel({
   currentInning,
 }: SubstitutionPanelProps) {
   const { substitutePlayer, getCurrentBatter } = useGameStore();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const [substitutionType, setSubstitutionType] = useState<SubstitutionType>('代打');
   const [battingOrder, setBattingOrder] = useState<number>(1);
   const [playerName, setPlayerName] = useState('');
   const [position, setPosition] = useState<FieldingPosition | ''>('');
-
-  if (!isOpen) return null;
 
   const currentPlayer = getCurrentBatter(gameId, attackingSide, battingOrder);
 
@@ -54,7 +67,19 @@ export function SubstitutionPanel({
     ? currentPlayer !== undefined && position !== ''
     : playerName.trim() !== '' && position !== '';
 
-  function handleSubmit() {
+  const resetForm = useCallback(() => {
+    setSubstitutionType('代打');
+    setBattingOrder(1);
+    setPlayerName('');
+    setPosition('');
+  }, []);
+
+  const handleClose = useCallback(() => {
+    resetForm();
+    onClose();
+  }, [onClose, resetForm]);
+
+  const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
 
     substitutePlayer({
@@ -70,20 +95,73 @@ export function SubstitutionPanel({
     });
 
     // フォームをリセットして閉じる
-    setSubstitutionType('代打');
-    setBattingOrder(1);
-    setPlayerName('');
-    setPosition('');
+    resetForm();
     onClose();
-  }
+  }, [
+    canSubmit,
+    isDefensiveChange,
+    substitutePlayer,
+    gameId,
+    attackingSide,
+    battingOrder,
+    currentPlayer?.playerName,
+    currentPlayer?.position,
+    playerName,
+    position,
+    currentInning,
+    substitutionType,
+    resetForm,
+    onClose,
+  ]);
 
-  function handleClose() {
-    setSubstitutionType('代打');
-    setBattingOrder(1);
-    setPlayerName('');
-    setPosition('');
-    onClose();
-  }
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusable = getFocusableElements(dialog);
+    focusable[0]?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleClose();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const currentFocusable = getFocusableElements(dialog);
+      if (currentFocusable.length === 0) return;
+
+      const first = currentFocusable[0];
+      const last = currentFocusable[currentFocusable.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+
+      if (!active || !dialog.contains(active)) {
+        event.preventDefault();
+        first.focus();
+        return;
+      }
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault();
+        last.focus();
+        return;
+      }
+
+      if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleClose]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
@@ -95,9 +173,11 @@ export function SubstitutionPanel({
 
       {/* パネル本体 */}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="substitution-dialog-title"
+        tabIndex={-1}
         className="relative w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl p-6 space-y-5"
       >
         <h2 id="substitution-dialog-title" className="text-lg font-bold text-zinc-900">選手交代</h2>
