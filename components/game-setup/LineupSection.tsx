@@ -67,8 +67,8 @@ export function LineupSection({ values, errors, onChange, onAddBench }: LineupSe
       {/* 打順ヘッダー */}
       <div className="grid grid-cols-[40px_1fr_160px] gap-2 px-1 text-xs font-medium text-zinc-500">
         <span>打順</span>
-        <span>選手名</span>
-        <span>守備位置</span>
+        <span id="lineup-col-player">選手名</span>
+        <span id="lineup-col-position">守備位置</span>
       </div>
 
       {/* 打順行 */}
@@ -77,6 +77,7 @@ export function LineupSection({ values, errors, onChange, onAddBench }: LineupSe
           <LineupRowItem
             key={index}
             index={index}
+            side={activeSide}
             row={row}
             error={currentErrors[index]}
             onChange={(field, value) => onChange(activeSide, index, field, value)}
@@ -99,14 +100,19 @@ export function LineupSection({ values, errors, onChange, onAddBench }: LineupSe
 
 interface LineupRowItemProps {
   index: number;
+  side: 'home' | 'away';
   row: LineupRow;
   error?: string;
-  onChange: (field: keyof LineupRow, value: string | FieldingPosition) => void;
+  onChange: (field: keyof LineupRow, value: string | FieldingPosition | '') => void;
 }
 
-function LineupRowItem({ index, row, error, onChange }: LineupRowItemProps) {
+function LineupRowItem({ index, side, row, error, onChange }: LineupRowItemProps) {
   const isStarter = index < 9;
   const battingOrder = isStarter ? index + 1 : null;
+  const sideLabel = side === 'home' ? 'ホーム' : 'ビジター';
+  const playerInputId = `${side}-lineup-player-${index}`;
+  const positionSelectId = `${side}-lineup-position-${index}`;
+  const rowLabel = `${sideLabel} ${battingOrder ?? '控え'} ${isStarter ? '番打者' : '選手'}`;
 
   return (
     <div className="space-y-1">
@@ -116,18 +122,25 @@ function LineupRowItem({ index, row, error, onChange }: LineupRowItemProps) {
         </span>
 
         <input
+          id={playerInputId}
           type="text"
           value={row.playerName}
           onChange={(e: ChangeEvent<HTMLInputElement>) => onChange('playerName', e.target.value)}
+          aria-label={`${rowLabel} 選手名`}
+          aria-describedby="lineup-col-player"
           placeholder={isStarter ? `${battingOrder}番打者` : '選手名'}
           className="min-h-[44px] rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
 
         <select
+          id={positionSelectId}
           value={row.position}
-          onChange={(e: ChangeEvent<HTMLSelectElement>) =>
-            onChange('position', Number(e.target.value) as FieldingPosition)
-          }
+          onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+            const value = e.target.value;
+            onChange('position', value === '' ? '' : (Number(value) as FieldingPosition));
+          }}
+          aria-label={`${rowLabel} 守備位置`}
+          aria-describedby="lineup-col-position"
           className="min-h-[44px] rounded-md border border-zinc-300 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
         >
           <option value="">選択</option>
