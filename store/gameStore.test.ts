@@ -10,6 +10,7 @@ describe('gameStore', () => {
   describe('createGame', () => {
     it('正しいGame オブジェクトを返す', () => {
       const input = {
+        userId: 'user-1',
         homeTeamName: '読売ジャイアンツ',
         awayTeamName: '阪神タイガース',
         date: '2026-02-17',
@@ -28,6 +29,7 @@ describe('gameStore', () => {
 
     it('games 配列に追加される', () => {
       useGameStore.getState().createGame({
+        userId: 'user-1',
         homeTeamName: 'A',
         awayTeamName: 'B',
         date: '2026-02-17',
@@ -40,6 +42,7 @@ describe('gameStore', () => {
   describe('addLineupsForGame', () => {
     it('ラインナップを登録できる', () => {
       const game = useGameStore.getState().createGame({
+        userId: 'user-1',
         homeTeamName: 'A',
         awayTeamName: 'B',
         date: '2026-02-17',
@@ -67,6 +70,7 @@ describe('gameStore', () => {
   describe('substitutePlayer', () => {
     function setupGame() {
       const game = useGameStore.getState().createGame({
+        userId: 'user-1',
         homeTeamName: 'A',
         awayTeamName: 'B',
         date: '2026-02-17',
@@ -179,6 +183,7 @@ describe('gameStore', () => {
 
     it('作成したゲームを取得できる', () => {
       const game = useGameStore.getState().createGame({
+        userId: 'user-1',
         homeTeamName: 'A',
         awayTeamName: 'B',
         date: '2026-02-17',

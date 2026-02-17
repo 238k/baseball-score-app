@@ -31,6 +31,7 @@ export interface Lineup {
 }
 
 export interface CreateGameInput {
+  userId: string;
   homeTeamName: string;
   awayTeamName: string;
   date: string;

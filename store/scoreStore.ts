@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type {
   PitchType,
   PlateResult,
@@ -152,7 +153,9 @@ function applyForceAdvances(
   return newRunners;
 }
 
-export const useScoreStore = create<ScoreState>((set, get) => ({
+export const useScoreStore = create<ScoreState>()(
+  persist(
+    (set, get) => ({
   gameId: null,
   currentInning: 1,
   currentTopBottom: 'top',
@@ -407,4 +410,23 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
       undoStack: state.undoStack.slice(0, -1),
     });
   },
-}));
+}),
+{
+  name: 'baseball-score-score-store',
+  // undoStack・pitches はセッション揮発性なので永続化しない
+  partialize: (state) => ({
+    gameId: state.gameId,
+    currentInning: state.currentInning,
+    currentTopBottom: state.currentTopBottom,
+    currentBatterIndex: state.currentBatterIndex,
+    outs: state.outs,
+    runnersOnBase: state.runnersOnBase,
+    plateAppearances: state.plateAppearances,
+    phase: state.phase,
+    sequenceCounter: state.sequenceCounter,
+    pendingBatterLineupId: state.pendingBatterLineupId,
+    pendingBatterDestination: state.pendingBatterDestination,
+  }),
+}
+  )
+);

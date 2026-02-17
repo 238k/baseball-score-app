@@ -16,6 +16,7 @@ interface FixtureData {
 // 打順・守備位置は一般的な配置を想定
 export const FIXTURE_GAME: FixtureData = {
   game: {
+    userId: 'local',
     homeTeamName: 'ホームチーム',
     awayTeamName: 'アウェイチーム',
     date: new Date().toISOString().slice(0, 10),

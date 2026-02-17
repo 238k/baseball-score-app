@@ -2,14 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/store/gameStore';
+import { useAuth } from '@/hooks/useAuth';
 import { FIXTURE_GAME } from '@/lib/fixtures';
 
 export function QuickStartButton() {
   const router = useRouter();
   const { createGame, addLineupsForGame } = useGameStore();
+  const { user } = useAuth();
 
   function handleQuickStart() {
-    const game = createGame(FIXTURE_GAME.game);
+    const game = createGame({ ...FIXTURE_GAME.game, userId: user?.id ?? 'local' });
 
     for (const side of ['home', 'away'] as const) {
       const entries = FIXTURE_GAME[side].map((row, index) => ({

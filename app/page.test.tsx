@@ -7,6 +7,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+// useAuth をモック（未認証状態）
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => ({ user: null, isLoading: false, logout: vi.fn() }),
+}));
+
 test("App", () => {
   render(<Home />);
   expect(screen.getByRole("heading", { level: 1 })).toBeDefined();

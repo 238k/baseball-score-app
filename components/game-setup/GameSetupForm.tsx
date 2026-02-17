@@ -7,6 +7,7 @@ import type { TeamInfoValues, LineupValues, LineupRow } from '@/types/game-setup
 import { TeamInfoSection } from './TeamInfoSection';
 import { LineupSection, createInitialLineup } from './LineupSection';
 import { useGameStore } from '@/store/gameStore';
+import { useAuth } from '@/hooks/useAuth';
 import type { FieldingPosition } from '@/types/game';
 
 // バリデーションスキーマ
@@ -28,6 +29,7 @@ function createInitialLineupValues(): LineupValues {
 export function GameSetupForm() {
   const router = useRouter();
   const { createGame, addLineupsForGame } = useGameStore();
+  const { user } = useAuth();
 
   const [teamInfo, setTeamInfo] = useState<TeamInfoValues>({
     homeTeamName: '',
@@ -134,6 +136,7 @@ export function GameSetupForm() {
     if (!validate()) return;
 
     const game = createGame({
+      userId: user?.id ?? 'local',
       homeTeamName: teamInfo.homeTeamName,
       awayTeamName: teamInfo.awayTeamName,
       date: teamInfo.date,
