@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FieldingPosition, SubstitutionType } from '@/types/game';
 import { useGameStore } from '@/store/gameStore';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 const FIELDING_POSITION_LABELS: Record<FieldingPosition, string> = {
   1: '投手 (P)',
@@ -184,42 +188,44 @@ export function SubstitutionPanel({
 
         {/* 交代種別 */}
         <div className="space-y-1">
-          <label className="text-sm font-medium text-zinc-700">交代種別</label>
+          <Label className="text-zinc-700">交代種別</Label>
           <div className="grid grid-cols-2 gap-2">
             {SUBSTITUTION_TYPES.map((type) => (
-              <button
+              <Button
                 key={type}
                 type="button"
                 onClick={() => setSubstitutionType(type)}
-                className={`min-h-[44px] rounded-lg border text-sm font-medium transition-colors ${
+                className={cn(
+                  'min-h-[44px] rounded-lg border text-sm font-medium',
                   substitutionType === type
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-50'
-                }`}
+                    ? 'border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700'
+                    : 'border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-700',
+                )}
               >
                 {type}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
 
         {/* 交代する打順 */}
         <div className="space-y-1">
-          <label className="text-sm font-medium text-zinc-700">交代する打順</label>
+          <Label className="text-zinc-700">交代する打順</Label>
           <div className="grid grid-cols-9 gap-1">
             {Array.from({ length: 9 }, (_, i) => i + 1).map((order) => (
-              <button
+              <Button
                 key={order}
                 type="button"
                 onClick={() => setBattingOrder(order)}
-                className={`min-h-[40px] rounded border text-sm font-medium transition-colors ${
+                className={cn(
+                  'min-h-[40px] rounded border text-sm font-medium',
                   battingOrder === order
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50'
-                }`}
+                    ? 'border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700'
+                    : 'border-zinc-300 bg-white hover:bg-zinc-50 text-zinc-600',
+                )}
               >
                 {order}
-              </button>
+              </Button>
             ))}
           </div>
           {currentPlayer && (
@@ -232,25 +238,25 @@ export function SubstitutionPanel({
         {/* 新しい選手名（守備交代以外） */}
         {!isDefensiveChange && (
           <div className="space-y-1">
-            <label className="text-sm font-medium text-zinc-700">新しい選手名</label>
-            <input
+            <Label className="text-zinc-700">新しい選手名</Label>
+            <Input
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="選手名を入力"
-              className="w-full min-h-[44px] px-3 rounded-lg border border-zinc-300 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="min-h-[44px]"
             />
           </div>
         )}
 
         {/* 守備位置（守備交代・投手交代・代打は必須、代走は任意） */}
         <div className="space-y-1">
-          <label className="text-sm font-medium text-zinc-700">
+          <Label className="text-zinc-700">
             守備位置
             {substitutionType === '代走' && (
               <span className="ml-1 text-xs text-zinc-400">（任意）</span>
             )}
-          </label>
+          </Label>
           <select
             value={position}
             onChange={(e) =>
@@ -269,21 +275,22 @@ export function SubstitutionPanel({
 
         {/* ボタン */}
         <div className="flex gap-3 pt-1">
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={handleClose}
-            className="flex-1 min-h-[48px] rounded-lg border border-zinc-300 text-zinc-700 text-sm font-medium hover:bg-zinc-50 transition-colors"
+            className="flex-1 min-h-[48px] rounded-lg text-zinc-700"
           >
             キャンセル
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="flex-1 min-h-[48px] rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex-1 min-h-[48px] rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed"
           >
             確定
-          </button>
+          </Button>
         </div>
       </div>
     </div>

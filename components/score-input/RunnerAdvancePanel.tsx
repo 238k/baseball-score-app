@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import type { RunnerDestination, RunnerInfo } from '@/types/score';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface RunnerAdvancePanelProps {
   runners: RunnerInfo[];
@@ -84,38 +86,37 @@ export function RunnerAdvancePanel({ runners, batterName, batterDest, onConfirm 
                 // 他の走者 or 打者がすでに使っている塁は無効化（ただし自分が選択中のものは除く）
                 const isOccupied = occupiedBases.has(dest) && !isSelected;
                 return (
-                  <button
+                  <Button
                     key={dest}
                     type="button"
                     onClick={() => handleSelect(runner.lineupId, dest)}
                     disabled={isOccupied}
-                    className={`min-h-[44px] px-4 rounded-lg text-sm font-medium transition-colors
-                      ${isSelected
+                    className={cn(
+                      'min-h-[44px] px-4 rounded-lg text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed',
+                      isSelected
                         ? dest === 4
-                          ? 'bg-yellow-500 text-white'
-                          : 'bg-blue-600 text-white'
-                        : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                      }
-                      disabled:opacity-30 disabled:cursor-not-allowed
-                    `}
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700',
+                    )}
                   >
                     {BASE_LABELS[dest]}
-                  </button>
+                  </Button>
                 );
               })}
               {/* アウトボタン */}
-              <button
+              <Button
                 type="button"
                 onClick={() => handleSelect(runner.lineupId, 'out')}
-                className={`min-h-[44px] px-4 rounded-lg text-sm font-medium transition-colors
-                  ${selected === 'out'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200'
-                  }
-                `}
+                className={cn(
+                  'min-h-[44px] px-4 rounded-lg text-sm font-medium',
+                  selected === 'out'
+                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700',
+                )}
               >
                 アウト
-              </button>
+              </Button>
             </div>
           </div>
         );
@@ -129,14 +130,14 @@ export function RunnerAdvancePanel({ runners, batterName, batterDest, onConfirm 
       )}
 
       {/* 確定ボタン */}
-      <button
+      <Button
         type="button"
         onClick={handleConfirm}
         disabled={!allSelected && runners.length > 0}
-        className="w-full min-h-[52px] rounded-lg bg-zinc-800 text-white font-bold text-base hover:bg-zinc-700 active:opacity-70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="w-full min-h-[52px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-base active:opacity-70 disabled:opacity-30 disabled:cursor-not-allowed"
       >
         確定する
-      </button>
+      </Button>
     </div>
   );
 }

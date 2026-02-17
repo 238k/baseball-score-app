@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 export default function OfflinePage() {
   return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
@@ -11,12 +13,12 @@ export default function OfflinePage() {
           <br />
           スコア入力中のデータはローカルに保存されています。
         </p>
-        <button
+        <Button
           onClick={() => window.location.reload()}
-          className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-md bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors"
+          className="min-h-[44px] px-6 bg-blue-600 text-white hover:bg-blue-700"
         >
           再試行
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { computeAllPitchingStats } from '@/lib/stats/pitchingStats';
 import { ScoreSheet } from '@/components/scorebook/ScoreSheet';
 import { BattingStatsTable } from '@/components/stats/BattingStatsTable';
 import { PitchingStatsTable } from '@/components/stats/PitchingStatsTable';
+import { Button } from '@/components/ui/button';
 
 interface PrintViewProps {
   gameId: string;
@@ -88,13 +89,13 @@ export function PrintView({ gameId }: PrintViewProps) {
           >
             ← 記録に戻る
           </Link>
-          <button
+          <Button
             type="button"
             onClick={() => window.print()}
-            className="min-h-[36px] px-4 rounded-md bg-blue-500 text-white text-sm font-medium hover:bg-blue-400 transition-colors"
+            className="min-h-[36px] px-4 bg-blue-500 text-white hover:bg-blue-400"
           >
             印刷
-          </button>
+          </Button>
         </div>
 
         {/* 試合情報 */}

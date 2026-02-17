@@ -4,6 +4,8 @@ import { useState } from 'react';
 import type { ChangeEvent } from 'react';
 import type { FieldingPosition } from '@/types/game';
 import type { LineupRow, LineupValues } from '@/types/game-setup';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // 守備位置の名称マップ
 const FIELDING_POSITION_LABELS: Record<FieldingPosition, string> = {
@@ -49,18 +51,19 @@ export function LineupSection({ values, errors, onChange, onAddBench }: LineupSe
       {/* ホーム/ビジタータブ */}
       <div className="flex gap-2 border-b border-zinc-200">
         {(['home', 'away'] as const).map((side) => (
-          <button
+          <Button
             key={side}
             type="button"
+            variant="ghost"
             onClick={() => setActiveSide(side)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-2 text-sm font-medium rounded-none border-b-2 h-auto transition-colors ${
               activeSide === side
                 ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-zinc-500 hover:text-zinc-700'
+                : 'border-transparent text-zinc-500 hover:text-zinc-700 hover:bg-transparent'
             }`}
           >
             {side === 'home' ? 'ホーム' : 'ビジター'}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -86,14 +89,15 @@ export function LineupSection({ values, errors, onChange, onAddBench }: LineupSe
       </div>
 
       {/* 控え追加ボタン */}
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => onAddBench(activeSide)}
-        className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 min-h-[44px] px-2"
+        className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-transparent min-h-[44px] px-2"
       >
         <span className="text-lg leading-none">+</span>
         <span>控え選手を追加</span>
-      </button>
+      </Button>
     </section>
   );
 }
@@ -121,7 +125,7 @@ function LineupRowItem({ index, side, row, error, onChange }: LineupRowItemProps
           {battingOrder ?? '控'}
         </span>
 
-        <input
+        <Input
           id={playerInputId}
           type="text"
           value={row.playerName}
@@ -129,7 +133,7 @@ function LineupRowItem({ index, side, row, error, onChange }: LineupRowItemProps
           aria-label={`${rowLabel} 選手名`}
           aria-describedby="lineup-col-player"
           placeholder={isStarter ? `${battingOrder}番打者` : '選手名'}
-          className="min-h-[44px] rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="min-h-[44px]"
         />
 
         <select

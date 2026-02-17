@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/store/gameStore';
 import { useAuth } from '@/hooks/useAuth';
 import { FIXTURE_GAME } from '@/lib/fixtures';
+import { Button } from '@/components/ui/button';
 
 export function QuickStartButton() {
   const router = useRouter();
@@ -35,12 +36,13 @@ export function QuickStartButton() {
   }
 
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       onClick={handleQuickStart}
-      className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-md border border-zinc-300 bg-white text-zinc-700 font-medium text-sm hover:bg-zinc-50 transition-colors"
+      className="min-h-[44px] px-6 text-zinc-700"
     >
       テスト試合を開始
-    </button>
+    </Button>
   );
 }
