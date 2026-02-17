@@ -63,13 +63,21 @@ export function GameHeader({ gameId, inning, topBottom, outs, runnersOnBase, hom
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-zinc-600 border-2 border-zinc-500" />
       </div>
 
-      {/* 成績リンク */}
-      <Link
-        href={`/games/${gameId}/stats`}
-        className="text-xs text-zinc-300 hover:text-white transition-colors flex-shrink-0"
-      >
-        成績
-      </Link>
+      {/* 成績・印刷リンク */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <Link
+          href={`/games/${gameId}/stats`}
+          className="text-xs text-zinc-300 hover:text-white transition-colors"
+        >
+          成績
+        </Link>
+        <Link
+          href={`/games/${gameId}/print`}
+          className="text-xs text-zinc-300 hover:text-white transition-colors"
+        >
+          印刷
+        </Link>
+      </div>
     </div>
   );
 }
