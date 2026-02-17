@@ -11,6 +11,7 @@ import { ResultInputPanel } from './ResultInputPanel';
 import { RunnerAdvancePanel } from './RunnerAdvancePanel';
 import { ScoreLog } from './ScoreLog';
 import { SubstitutionPanel } from './SubstitutionPanel';
+import { ScoreSheet } from '@/components/scorebook/ScoreSheet';
 import type { PitchType, PlateResult, RunnerDestination, RunnerInfo } from '@/types/score';
 
 interface ScoreInputPageProps {
@@ -124,6 +125,7 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
     <div className="min-h-screen bg-zinc-50 flex flex-col">
       {/* ヘッダー */}
       <GameHeader
+        gameId={gameId}
         inning={currentInning}
         topBottom={currentTopBottom}
         outs={outs}
@@ -131,6 +133,18 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
         homeTeamName={game.homeTeamName}
         awayTeamName={game.awayTeamName}
       />
+
+      {/* スコアシート（NPB準拠グリッド） */}
+      <div className="max-h-[calc(9*5rem+1.75rem)] overflow-y-auto flex-shrink-0">
+        <ScoreSheet
+          attackingSide={attackingSide}
+          attackingLineup={attackingLineup}
+          plateAppearances={plateAppearances}
+          currentInning={currentInning}
+          currentTopBottom={currentTopBottom}
+          currentBatterIndex={currentBatterIndex}
+        />
+      </div>
 
       {/* 現在打者情報 */}
       <CurrentBatterInfo

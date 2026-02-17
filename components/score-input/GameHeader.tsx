@@ -1,6 +1,9 @@
 'use client';
 
+import Link from 'next/link';
+
 interface GameHeaderProps {
+  gameId: string;
   inning: number;
   topBottom: 'top' | 'bottom';
   outs: number;
@@ -11,7 +14,7 @@ interface GameHeaderProps {
 
 const OUT_ICONS = ['○', '○', '○'] as const;
 
-export function GameHeader({ inning, topBottom, outs, runnersOnBase, homeTeamName, awayTeamName }: GameHeaderProps) {
+export function GameHeader({ gameId, inning, topBottom, outs, runnersOnBase, homeTeamName, awayTeamName }: GameHeaderProps) {
   const inningLabel = `${inning}回${topBottom === 'top' ? '表' : '裏'}`;
   const battingTeam = topBottom === 'top' ? awayTeamName : homeTeamName;
 
@@ -59,6 +62,14 @@ export function GameHeader({ inning, topBottom, outs, runnersOnBase, homeTeamNam
         {/* 本塁（固定） */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-zinc-600 border-2 border-zinc-500" />
       </div>
+
+      {/* 成績リンク */}
+      <Link
+        href={`/games/${gameId}/stats`}
+        className="text-xs text-zinc-300 hover:text-white transition-colors flex-shrink-0"
+      >
+        成績
+      </Link>
     </div>
   );
 }
