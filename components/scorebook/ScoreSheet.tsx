@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useMemo } from 'react';
 import { ScoreCell } from './ScoreCell';
-import type { PlateAppearance } from '@/types/score';
+import type { PlateAppearance, Pitch } from '@/types/score';
 import type { Lineup, FieldingPosition } from '@/types/game';
 
 // 守備位置の略称
@@ -24,6 +24,8 @@ export interface ScoreSheetProps {
   currentTopBottom: 'top' | 'bottom';
   /** 現在の打者インデックス（0〜8） */
   currentBatterIndex: number;
+  /** 現在打席中のリアルタイム投球記録 */
+  currentPitches?: Pitch[];
 }
 
 export function ScoreSheet({
@@ -33,6 +35,7 @@ export function ScoreSheet({
   currentInning,
   currentTopBottom,
   currentBatterIndex,
+  currentPitches,
 }: ScoreSheetProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const currentInningRef = useRef<HTMLDivElement>(null);
@@ -130,7 +133,7 @@ export function ScoreSheet({
                   className={isCurrentInningCol ? 'bg-blue-50/30' : ''}
                 >
                   {/* イニングヘッダー */}
-                  <div className={`h-7 w-20 flex items-center justify-center border-b border-r border-zinc-200 ${
+                  <div className={`h-7 w-28 flex items-center justify-center border-b border-r border-zinc-200 ${
                     isCurrentInningCol ? 'bg-blue-100' : 'bg-zinc-50'
                   }`}>
                     <span className={`text-[10px] font-bold ${
@@ -147,11 +150,12 @@ export function ScoreSheet({
                     const isCurrent = isCurrentInningCol && orderIdx === currentBatterIndex;
 
                     return (
-                      <div key={battingOrder} className="border-b border-r border-zinc-100">
+                      <div key={battingOrder}>
                         <ScoreCell
                           plateAppearance={pa}
                           isCurrent={isCurrent}
                           isCurrentInning={isCurrentInningCol}
+                          currentPitches={isCurrent ? currentPitches : undefined}
                         />
                       </div>
                     );
