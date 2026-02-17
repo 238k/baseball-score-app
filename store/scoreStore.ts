@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type {
   PitchType,
   PlateResult,
+  RunnerDestination,
   Pitch,
   PlateAppearance,
   ScorePhase,
@@ -24,6 +25,10 @@ interface ScoreState {
   phase: ScorePhase;
   sequenceCounter: number;               // 打席通し番号カウンター
 
+  // runner_advance フェーズで使用（フェーズ外では null）
+  pendingBatterLineupId: string | null;
+  pendingBatterDestination: 1 | 2 | 3 | 4 | null; // null = 打者アウト
+
   undoStack: ScoreSnapshot[];
 
   // アクション
@@ -35,6 +40,7 @@ interface ScoreState {
     battingOrder: number,
   ) => void;
   recordResult: (result: PlateResult, batterLineupId: string, batterName: string, battingOrder: number) => void;
+  confirmRunners: (destinations: Record<string, RunnerDestination>) => void;
   advanceInning: () => void;
   undo: () => void;
 }
@@ -51,6 +57,8 @@ function snapshot(state: ScoreState): ScoreSnapshot {
     plateAppearances: [...state.plateAppearances],
     phase: state.phase,
     sequenceCounter: state.sequenceCounter,
+    pendingBatterLineupId: state.pendingBatterLineupId,
+    pendingBatterDestination: state.pendingBatterDestination,
   };
 }
 
@@ -86,6 +94,64 @@ function confirmPlateAppearance(
   };
 }
 
+// 打席結果から打者の到達塁を決定する（null=アウト）
+function getBatterDestination(result: PlateResult): 1 | 2 | 3 | 4 | null {
+  switch (result) {
+    case '単打':
+    case '野選':
+    case 'エラー':
+    case '振り逃げ':
+    case '四球':
+    case '死球':
+      return 1;
+    case '二塁打':
+      return 2;
+    case '三塁打':
+      return 3;
+    case '本塁打':
+      return 4;
+    default:
+      // ゴロ・フライ・ライナー・三振・犠打・犠飛・併殺打
+      return null;
+  }
+}
+
+// 四球・死球のフォースアドバンスを適用する
+function applyForceAdvances(
+  runners: Record<1 | 2 | 3, string | null>,
+  batterLineupId: string,
+): Record<1 | 2 | 3, string | null> {
+  const r1 = runners[1];
+  const r2 = runners[2];
+  const r3 = runners[3];
+
+  const newRunners: Record<1 | 2 | 3, string | null> = { 1: null, 2: null, 3: null };
+
+  // 打者は必ず1塁へ
+  newRunners[1] = batterLineupId;
+
+  if (r1 !== null) {
+    // 1塁走者はフォースで2塁へ
+    newRunners[2] = r1;
+
+    if (r2 !== null) {
+      // 2塁走者はフォースで3塁へ
+      newRunners[3] = r2;
+      // 満塁だった場合: 3塁走者は得点（塁から消える）
+      // r3 は記録しない（得点としてカウント）
+    } else {
+      // 2塁が空 → 3塁はそのまま
+      newRunners[3] = r3;
+    }
+  } else {
+    // 1塁が空 → 2塁・3塁はそのまま
+    newRunners[2] = r2;
+    newRunners[3] = r3;
+  }
+
+  return newRunners;
+}
+
 export const useScoreStore = create<ScoreState>((set, get) => ({
   gameId: null,
   currentInning: 1,
@@ -97,6 +163,8 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
   plateAppearances: [],
   phase: 'pitching',
   sequenceCounter: 0,
+  pendingBatterLineupId: null,
+  pendingBatterDestination: null,
   undoStack: [],
 
   initGame: (gameId) => {
@@ -111,6 +179,8 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
       plateAppearances: [],
       phase: 'pitching',
       sequenceCounter: 0,
+      pendingBatterLineupId: null,
+      pendingBatterDestination: null,
       undoStack: [],
     });
   },
@@ -149,13 +219,15 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
       return;
     }
 
-    // 4ボール → 四球自動確定
+    // 4ボール → 四球自動確定（フォースアドバンス適用）
     if (balls >= 4) {
       const pa = confirmPlateAppearance({ ...state, pitches: updatedPitches }, '四球', batterLineupId, batterName, battingOrder);
+      const newRunners = applyForceAdvances(state.runnersOnBase, batterLineupId);
 
       set({
         pitches: [],
         plateAppearances: [...state.plateAppearances, pa],
+        runnersOnBase: newRunners,
         currentBatterIndex: (state.currentBatterIndex + 1) % 9,
         phase: 'pitching',
         sequenceCounter: state.sequenceCounter + 1,
@@ -164,13 +236,15 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
       return;
     }
 
-    // 死球 → 自動確定
+    // 死球 → 自動確定（フォースアドバンス適用）
     if (type === 'hbp') {
       const pa = confirmPlateAppearance({ ...state, pitches: updatedPitches }, '死球', batterLineupId, batterName, battingOrder);
+      const newRunners = applyForceAdvances(state.runnersOnBase, batterLineupId);
 
       set({
         pitches: [],
         plateAppearances: [...state.plateAppearances, pa],
+        runnersOnBase: newRunners,
         currentBatterIndex: (state.currentBatterIndex + 1) % 9,
         phase: 'pitching',
         sequenceCounter: state.sequenceCounter + 1,
@@ -206,15 +280,87 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
     const isDoublePlay = DOUBLE_PLAY_RESULTS.includes(result);
     const outIncrement = isDoublePlay ? 2 : isOut ? 1 : 0;
     const newOuts = Math.min(state.outs + outIncrement, 3);
+
+    // 3アウト → 即 inning_end（走者進塁パネルはスキップ）
+    if (newOuts >= 3) {
+      set({
+        pitches: [],
+        plateAppearances: [...state.plateAppearances, pa],
+        outs: newOuts,
+        phase: 'inning_end',
+        sequenceCounter: state.sequenceCounter + 1,
+        undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+      });
+      return;
+    }
+
+    const batterDest = getBatterDestination(result);
+    const hasRunners =
+      state.runnersOnBase[1] !== null ||
+      state.runnersOnBase[2] !== null ||
+      state.runnersOnBase[3] !== null;
+    const needsRunnerAdvance = batterDest !== null || hasRunners;
+
+    if (needsRunnerAdvance) {
+      // runner_advance フェーズへ（currentBatterIndex はここでは進めない）
+      set({
+        pitches: [],
+        plateAppearances: [...state.plateAppearances, pa],
+        outs: newOuts,
+        phase: 'runner_advance',
+        pendingBatterLineupId: batterLineupId,
+        pendingBatterDestination: batterDest,
+        sequenceCounter: state.sequenceCounter + 1,
+        undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+      });
+    } else {
+      // 走者なし + 打者アウト → 即次打者へ
+      set({
+        pitches: [],
+        plateAppearances: [...state.plateAppearances, pa],
+        outs: newOuts,
+        currentBatterIndex: (state.currentBatterIndex + 1) % 9,
+        phase: 'pitching',
+        sequenceCounter: state.sequenceCounter + 1,
+        undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+      });
+    }
+  },
+
+  confirmRunners: (destinations) => {
+    const state = get();
+    const snap = snapshot(state);
+
+    // 新しい塁状況を構築
+    const newRunners: Record<1 | 2 | 3, string | null> = { 1: null, 2: null, 3: null };
+
+    // 打者の到達塁を配置（1〜3塁のみ; 4=得点は塁に置かない）
+    const bd = state.pendingBatterDestination;
+    if (bd !== null && bd !== 4 && state.pendingBatterLineupId) {
+      newRunners[bd] = state.pendingBatterLineupId;
+    }
+
+    // 各走者の移動先を配置（アウトになった走者のカウントも集計）
+    let additionalOuts = 0;
+    for (const [lineupId, dest] of Object.entries(destinations)) {
+      if (dest === 'out') {
+        additionalOuts += 1;
+      } else if (dest !== 4) {
+        newRunners[dest] = lineupId;
+      }
+      // dest === 4（得点）→ 塁に配置しない
+    }
+
+    const newOuts = Math.min(state.outs + additionalOuts, 3);
     const newPhase: ScorePhase = newOuts >= 3 ? 'inning_end' : 'pitching';
 
     set({
-      pitches: newPhase === 'pitching' ? [] : state.pitches,
-      plateAppearances: [...state.plateAppearances, pa],
+      runnersOnBase: newRunners,
       outs: newOuts,
-      currentBatterIndex: newPhase === 'pitching' ? (state.currentBatterIndex + 1) % 9 : state.currentBatterIndex,
       phase: newPhase,
-      sequenceCounter: state.sequenceCounter + 1,
+      currentBatterIndex: newPhase === 'pitching' ? (state.currentBatterIndex + 1) % 9 : state.currentBatterIndex,
+      pendingBatterLineupId: null,
+      pendingBatterDestination: null,
       undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
     });
   },
@@ -235,6 +381,8 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
       runnersOnBase: { 1: null, 2: null, 3: null },
       pitches: [],
       phase: 'pitching',
+      pendingBatterLineupId: null,
+      pendingBatterDestination: null,
       undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
     });
   },
@@ -254,6 +402,8 @@ export const useScoreStore = create<ScoreState>((set, get) => ({
       plateAppearances: [...prev.plateAppearances],
       phase: prev.phase,
       sequenceCounter: prev.sequenceCounter,
+      pendingBatterLineupId: prev.pendingBatterLineupId,
+      pendingBatterDestination: prev.pendingBatterDestination,
       undoStack: state.undoStack.slice(0, -1),
     });
   },

@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { useScoreStore } from './scoreStore';
 
 const BATTER = { batterLineupId: 'batter-1', batterName: '田中', battingOrder: 1 };
+const RUNNER_1 = 'runner-1st';
+const RUNNER_2 = 'runner-2nd';
+const RUNNER_3 = 'runner-3rd';
 
 function resetStore() {
   useScoreStore.setState({
@@ -15,6 +18,8 @@ function resetStore() {
     plateAppearances: [],
     phase: 'pitching',
     sequenceCounter: 0,
+    pendingBatterLineupId: null,
+    pendingBatterDestination: null,
     undoStack: [],
   });
 }
@@ -36,6 +41,40 @@ describe('scoreStore', () => {
       expect(s.currentBatterIndex).toBe(1);
       expect(s.phase).toBe('pitching');
       expect(s.pitches).toHaveLength(0);
+    });
+
+    it('1塁走者がいる状態で四球を取るとフォースアドバンスが適用される', () => {
+      useScoreStore.setState({ runnersOnBase: { 1: RUNNER_1, 2: null, 3: null } });
+      for (let i = 0; i < 4; i++) {
+        useScoreStore.getState().recordPitch('ball', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      }
+      const s = useScoreStore.getState();
+      expect(s.runnersOnBase[1]).toBe(BATTER.batterLineupId); // 打者が1塁
+      expect(s.runnersOnBase[2]).toBe(RUNNER_1);              // 元1塁走者が2塁へ
+      expect(s.runnersOnBase[3]).toBeNull();                  // 3塁は空
+    });
+
+    it('満塁で四球を取ると3塁走者が得点してフォースアドバンスが適用される', () => {
+      useScoreStore.setState({ runnersOnBase: { 1: RUNNER_1, 2: RUNNER_2, 3: RUNNER_3 } });
+      for (let i = 0; i < 4; i++) {
+        useScoreStore.getState().recordPitch('ball', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      }
+      const s = useScoreStore.getState();
+      expect(s.runnersOnBase[1]).toBe(BATTER.batterLineupId); // 打者が1塁
+      expect(s.runnersOnBase[2]).toBe(RUNNER_1);              // 元1塁走者が2塁へ
+      expect(s.runnersOnBase[3]).toBe(RUNNER_2);              // 元2塁走者が3塁へ
+      // 元3塁走者は得点（塁から消える）
+    });
+  });
+
+  describe('recordPitch: 死球', () => {
+    it('死球で1塁走者がいるとフォースアドバンスが適用される', () => {
+      useScoreStore.setState({ runnersOnBase: { 1: RUNNER_1, 2: null, 3: null } });
+      useScoreStore.getState().recordPitch('hbp', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      const s = useScoreStore.getState();
+      expect(s.runnersOnBase[1]).toBe(BATTER.batterLineupId);
+      expect(s.runnersOnBase[2]).toBe(RUNNER_1);
+      expect(s.phase).toBe('pitching');
     });
   });
 
@@ -82,11 +121,106 @@ describe('scoreStore', () => {
     });
   });
 
-  describe('recordResult: 次打者移行', () => {
-    it('安打確定後に次の打者インデックスに移行する', () => {
+  describe('recordResult: runner_advance フェーズ遷移', () => {
+    it('単打後に runner_advance フェーズへ遷移し pendingBatterDestination が 1 になる', () => {
       useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
       useScoreStore.getState().recordResult('単打', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
-      expect(useScoreStore.getState().currentBatterIndex).toBe(1);
+      const s = useScoreStore.getState();
+      expect(s.phase).toBe('runner_advance');
+      expect(s.pendingBatterDestination).toBe(1);
+      expect(s.pendingBatterLineupId).toBe(BATTER.batterLineupId);
+      // 次打者へはまだ移行していない
+      expect(s.currentBatterIndex).toBe(0);
+    });
+
+    it('走者なし・アウトの場合は runner_advance をスキップして次打者へ移行する', () => {
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('ゴロ', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      const s = useScoreStore.getState();
+      expect(s.phase).toBe('pitching');
+      expect(s.currentBatterIndex).toBe(1);
+    });
+
+    it('走者がいてアウトになった場合も runner_advance フェーズへ遷移する', () => {
+      useScoreStore.setState({ runnersOnBase: { 1: RUNNER_1, 2: null, 3: null } });
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('フライ', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      const s = useScoreStore.getState();
+      expect(s.phase).toBe('runner_advance');
+    });
+  });
+
+  describe('confirmRunners', () => {
+    it('confirmRunners で runnersOnBase が更新され次打者へ移行する', () => {
+      // 単打 → runner_advance フェーズへ
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('単打', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+
+      // 走者なし・打者のみ1塁へ（空のdestinations）
+      useScoreStore.getState().confirmRunners({});
+      const s = useScoreStore.getState();
+      expect(s.runnersOnBase[1]).toBe(BATTER.batterLineupId); // 打者が1塁
+      expect(s.currentBatterIndex).toBe(1);
+      expect(s.phase).toBe('pitching');
+      expect(s.pendingBatterLineupId).toBeNull();
+      expect(s.pendingBatterDestination).toBeNull();
+    });
+
+    it('走者が移動先に正しく配置される', () => {
+      useScoreStore.setState({ runnersOnBase: { 1: RUNNER_1, 2: null, 3: null } });
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('単打', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+
+      // RUNNER_1 は2塁へ
+      useScoreStore.getState().confirmRunners({ [RUNNER_1]: 2 });
+      const s = useScoreStore.getState();
+      expect(s.runnersOnBase[1]).toBe(BATTER.batterLineupId); // 打者が1塁
+      expect(s.runnersOnBase[2]).toBe(RUNNER_1);              // 走者が2塁
+      expect(s.runnersOnBase[3]).toBeNull();
+    });
+
+    it('走者がアウトになった場合は塁から消えアウトカウントが増加する', () => {
+      useScoreStore.setState({ runnersOnBase: { 1: RUNNER_1, 2: null, 3: null } });
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('単打', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+
+      // RUNNER_1 はアウト
+      useScoreStore.getState().confirmRunners({ [RUNNER_1]: 'out' });
+      const s = useScoreStore.getState();
+      expect(s.runnersOnBase[1]).toBe(BATTER.batterLineupId); // 打者が1塁
+      expect(s.runnersOnBase[2]).toBeNull();                  // アウトになったので消える
+      expect(s.outs).toBe(1);                                 // アウトカウント増加
+    });
+
+    it('走者が得点した場合は塁から消える', () => {
+      useScoreStore.setState({ runnersOnBase: { 1: null, 2: null, 3: RUNNER_3 } });
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('単打', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+
+      // RUNNER_3 は得点
+      useScoreStore.getState().confirmRunners({ [RUNNER_3]: 4 });
+      const s = useScoreStore.getState();
+      expect(s.runnersOnBase[1]).toBe(BATTER.batterLineupId); // 打者が1塁
+      expect(s.runnersOnBase[3]).toBeNull();                  // 得点したので消える
+    });
+  });
+
+  describe('recordResult: 野選・エラーはアウトにならない', () => {
+    it('野選はアウトカウントが増加せず打者が1塁に出塁する', () => {
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('野選', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      const s = useScoreStore.getState();
+      expect(s.outs).toBe(0);
+      expect(s.phase).toBe('runner_advance');
+      expect(s.pendingBatterDestination).toBe(1);
+    });
+
+    it('エラーはアウトカウントが増加せず打者が1塁に出塁する', () => {
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('エラー', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      const s = useScoreStore.getState();
+      expect(s.outs).toBe(0);
+      expect(s.pendingBatterDestination).toBe(1);
     });
   });
 
@@ -100,6 +234,14 @@ describe('scoreStore', () => {
 
     it('undoStack が空のときは何もしない', () => {
       expect(() => useScoreStore.getState().undo()).not.toThrow();
+    });
+
+    it('runner_advance フェーズから undo で result フェーズに戻る', () => {
+      useScoreStore.getState().recordPitch('in_play', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().recordResult('単打', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      expect(useScoreStore.getState().phase).toBe('runner_advance');
+      useScoreStore.getState().undo();
+      expect(useScoreStore.getState().phase).toBe('result');
     });
   });
 

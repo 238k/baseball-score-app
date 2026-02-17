@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useGameStore } from '@/store/gameStore';
 import { useScoreStore } from '@/store/scoreStore';
@@ -8,8 +8,9 @@ import { GameHeader } from './GameHeader';
 import { CurrentBatterInfo } from './CurrentBatterInfo';
 import { PitchInputPanel } from './PitchInputPanel';
 import { ResultInputPanel } from './ResultInputPanel';
+import { RunnerAdvancePanel } from './RunnerAdvancePanel';
 import { ScoreLog } from './ScoreLog';
-import type { PitchType, PlateResult } from '@/types/score';
+import type { PitchType, PlateResult, RunnerDestination, RunnerInfo } from '@/types/score';
 
 interface ScoreInputPageProps {
   gameId: string;
@@ -30,9 +31,11 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
     phase,
     recordPitch,
     recordResult,
+    confirmRunners,
     advanceInning,
     undo,
     undoStack,
+    pendingBatterDestination,
   } = useScoreStore();
 
   const game = getGame(gameId);
@@ -47,7 +50,7 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
   // 現在の攻撃チーム
   const attackingSide: 'home' | 'away' = currentTopBottom === 'top' ? 'away' : 'home';
-  const gameLineups = lineups[gameId] ?? [];
+  const gameLineups = useMemo(() => lineups[gameId] ?? [], [lineups, gameId]);
   const attackingLineup = gameLineups
     .filter((l) => l.side === attackingSide && l.isStarter)
     .sort((a, b) => a.battingOrder - b.battingOrder);
@@ -57,6 +60,24 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
   const batterName = currentBatterLineup?.playerName ?? `打者${currentBatterIndex + 1}`;
   const battingOrder = currentBatterLineup?.battingOrder ?? currentBatterIndex + 1;
   const batterLineupId = currentBatterLineup?.id ?? `dummy-${currentBatterIndex}`;
+
+  // ラインナップIDから選手名を解決するヘルパー
+  const resolveRunnerName = useCallback(
+    (lineupId: string, fromBase: 1 | 2 | 3): string => {
+      const found = gameLineups.find((l) => l.id === lineupId);
+      return found?.playerName ?? `${fromBase}塁走者`;
+    },
+    [gameLineups],
+  );
+
+  // runner_advance フェーズで表示する走者リスト
+  const runnersForAdvancePanel: RunnerInfo[] = ([1, 2, 3] as const)
+    .filter((base) => runnersOnBase[base] !== null)
+    .map((base) => ({
+      lineupId: runnersOnBase[base] as string,
+      name: resolveRunnerName(runnersOnBase[base] as string, base),
+      fromBase: base,
+    }));
 
   const handlePitch = useCallback(
     (type: PitchType) => {
@@ -70,6 +91,13 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
       recordResult(result, batterLineupId, batterName, battingOrder);
     },
     [recordResult, batterLineupId, batterName, battingOrder],
+  );
+
+  const handleConfirmRunners = useCallback(
+    (destinations: Record<string, RunnerDestination>) => {
+      confirmRunners(destinations);
+    },
+    [confirmRunners],
   );
 
   // 試合データが見つからない場合
@@ -118,6 +146,13 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
               攻守交代
             </button>
           </div>
+        ) : phase === 'runner_advance' ? (
+          <RunnerAdvancePanel
+            runners={runnersForAdvancePanel}
+            batterName={batterName}
+            batterDest={pendingBatterDestination}
+            onConfirm={handleConfirmRunners}
+          />
         ) : phase === 'result' ? (
           <ResultInputPanel onResult={handleResult} />
         ) : (

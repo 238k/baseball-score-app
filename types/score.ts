@@ -21,8 +21,9 @@ export type PlateResult =
   | '野選' | 'エラー' | '併殺打' | '振り逃げ';
 
 // アウトになる打席結果の集合
+// NPBルール: 野選・エラー・振り逃げは打者が出塁するためアウトではない（このリストに含めない）
 export const OUT_RESULTS: PlateResult[] = [
-  'ゴロ', 'フライ', 'ライナー', '三振振り', '三振見', '犠打', '犠飛', '野選', 'エラー', '併殺打',
+  'ゴロ', 'フライ', 'ライナー', '三振振り', '三振見', '犠打', '犠飛', '併殺打',
 ];
 
 // 複数アウトになる打席結果
@@ -50,9 +51,20 @@ export interface PlateAppearance {
 
 // スコア入力のフェーズ
 export type ScorePhase =
-  | 'pitching'   // 投球入力中
-  | 'result'     // 打球結果入力待ち（インプレー後）
-  | 'inning_end'; // 3アウト・攻守交代待ち
+  | 'pitching'        // 投球入力中
+  | 'result'          // 打球結果入力待ち（インプレー後）
+  | 'runner_advance'  // 打席結果後、走者移動入力待ち
+  | 'inning_end';     // 3アウト・攻守交代待ち
+
+// 走者の移動先（4=得点して塁から消える、'out'=アウトで塁から消える）
+export type RunnerDestination = 1 | 2 | 3 | 4 | 'out';
+
+// 走者進塁パネル用の走者情報
+export interface RunnerInfo {
+  lineupId: string;
+  name: string;
+  fromBase: 1 | 2 | 3;
+}
 
 // Undo用スナップショット
 export interface ScoreSnapshot {
@@ -66,4 +78,7 @@ export interface ScoreSnapshot {
   plateAppearances: PlateAppearance[];
   phase: ScorePhase;
   sequenceCounter: number;
+  // runner_advance フェーズで使用
+  pendingBatterLineupId: string | null;
+  pendingBatterDestination: 1 | 2 | 3 | 4 | null;
 }
