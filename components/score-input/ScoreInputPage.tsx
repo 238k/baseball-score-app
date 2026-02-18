@@ -86,14 +86,31 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
   // 現在の攻撃チーム
   const attackingSide: 'home' | 'away' = currentTopBottom === 'top' ? 'away' : 'home';
+
+  // スコアシートで閲覧中のチーム（デフォルト: 攻撃中チーム）
+  const [viewingSide, setViewingSide] = useState<'home' | 'away'>(attackingSide);
+
+  // 攻守交代時に閲覧チームを自動リセット
+  useEffect(() => {
+    setViewingSide(attackingSide);
+  }, [attackingSide]);
+
   const gameLineups = useMemo(() => lineups[gameId] ?? [], [lineups, gameId]);
 
-  // 各打順の現在の選手（cycle 最大）を取得
+  // 各打順の現在の選手（cycle 最大）を取得（攻撃チーム）
   const attackingLineup = useMemo(() => {
     return Array.from({ length: 9 }, (_, i) => {
       return getCurrentBatter(gameId, attackingSide, i + 1) ?? null;
     });
   }, [gameId, attackingSide, getCurrentBatter, gameLineups]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // スコアシートで閲覧中のチームのラインナップ
+  const viewingLineup = useMemo(() => {
+    if (viewingSide === attackingSide) return attackingLineup;
+    return Array.from({ length: 9 }, (_, i) => {
+      return getCurrentBatter(gameId, viewingSide, i + 1) ?? null;
+    });
+  }, [gameId, viewingSide, attackingSide, attackingLineup, getCurrentBatter, gameLineups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 現在の打者（ラインナップが空の場合はダミー）
   const currentBatterLineup = attackingLineup[currentBatterIndex] ?? null;
@@ -166,11 +183,38 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
       {/* メインコンテンツ: 左右2ペイン */}
       <div className="flex flex-1 min-h-0">
         {/* 左ペイン: スコアシート */}
-        <div className="flex-1 min-w-0 overflow-x-auto overflow-y-hidden bg-white">
-          <div className="h-full">
+        <div className="flex-1 min-w-0 overflow-x-hidden overflow-y-hidden bg-white flex flex-col">
+          {/* チーム切り替えトグル */}
+          <div className="flex border-b border-zinc-200 bg-white flex-shrink-0">
+            <button
+              type="button"
+              aria-pressed={viewingSide === 'away'}
+              onClick={() => setViewingSide('away')}
+              className={`flex-1 min-h-[36px] py-2 text-xs font-medium transition-colors ${
+                viewingSide === 'away'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-zinc-500 hover:bg-zinc-100'
+              }`}
+            >
+              {game.awayTeamName}（表）
+            </button>
+            <button
+              type="button"
+              aria-pressed={viewingSide === 'home'}
+              onClick={() => setViewingSide('home')}
+              className={`flex-1 min-h-[36px] py-2 text-xs font-medium transition-colors ${
+                viewingSide === 'home'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-zinc-500 hover:bg-zinc-100'
+              }`}
+            >
+              {game.homeTeamName}（裏）
+            </button>
+          </div>
+          <div className="flex-1 overflow-x-auto overflow-y-hidden">
             <ScoreSheet
-              attackingSide={attackingSide}
-              attackingLineup={attackingLineup}
+              attackingSide={viewingSide}
+              attackingLineup={viewingLineup}
               plateAppearances={plateAppearances}
               currentInning={currentInning}
               currentTopBottom={currentTopBottom}
