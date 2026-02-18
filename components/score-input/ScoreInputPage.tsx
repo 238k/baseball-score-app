@@ -241,6 +241,16 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
         {/* 右ペイン: 試合状況 + 操作UI */}
         <div className="w-80 flex-shrink-0 flex flex-col border-l border-zinc-200">
+          {/* 試合一覧へのリンク */}
+          <div className="flex-shrink-0 bg-zinc-800 px-3 pt-2">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+            >
+              ← 試合一覧
+            </Link>
+          </div>
+
           {/* 右上: 試合状況パネル */}
           <GameStatusPanel
             inning={currentInning}
