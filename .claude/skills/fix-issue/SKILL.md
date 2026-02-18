@@ -1,6 +1,6 @@
 ---
 name: fix-issue
-description: GitHub issue を読み込んで実装し、対応内容をコメントしてクローズするスキル。/add-feature を使用して実装する。
+description: GitHub issue を読み込んで実装し、対応内容をコメントするスキル。/add-feature を使用して実装する。
 ---
 
 # Issue 対応スキル (完全自動実行モード)
@@ -83,14 +83,6 @@ EOF
 )"
 ```
 
-## ステップ6: issue のクローズ
-
-コメント完了後、issue をクローズする。
-
-```bash
-gh issue close [issue番号]
-```
-
 ## 完了条件
 
 以下をすべて満たした時点で完了:
@@ -98,4 +90,3 @@ gh issue close [issue番号]
 - [ ] add-feature による実装が完了している（tasklist.md 全タスク完了・テスト通過）
 - [ ] 変更がコミットされている
 - [ ] issue に対応内容のコメントが投稿されている
-- [ ] issue がクローズされている
