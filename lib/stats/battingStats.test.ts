@@ -132,4 +132,80 @@ describe('computeAllBattingStats', () => {
     const stats = computeAllBattingStats([pa('単打')], [], 'top');
     expect(stats).toHaveLength(0);
   });
+
+  it('打席ゼロの控え事前登録選手は成績表に含まれない', () => {
+    // battingOrder: 10 の控え選手(事前登録済み、未出場)
+    const benchLineup: Lineup = {
+      id: 'bench1',
+      gameId: 'g1',
+      side: 'away',
+      battingOrder: 10,
+      playerName: '控え太郎',
+      position: 1,
+      cycle: 1,
+      enteredInning: 1,
+      isStarter: false,
+    };
+    const lineups: Lineup[] = [{ ...lineup, id: 'l1' }, benchLineup];
+    const pas: PlateAppearance[] = [
+      { ...pa('単打'), topBottom: 'top', batterLineupId: 'l1' },
+    ];
+    const stats = computeAllBattingStats(pas, lineups, 'top');
+    // 打席に立った l1 のみ返り、控え選手(打席ゼロ)は含まれない
+    expect(stats).toHaveLength(1);
+    expect(stats[0].playerName).toBe('鈴木');
+  });
+
+  it('控え選手が交代出場した場合は成績行が1行のみ表示される', () => {
+    // battingOrder: 10 の控え選手が交代出場し battingOrder: 3 で打席に立つ
+    const benchLineup: Lineup = {
+      id: 'bench1',
+      gameId: 'g1',
+      side: 'away',
+      battingOrder: 10,
+      playerName: '控え太郎',
+      position: 1,
+      cycle: 1,
+      enteredInning: 1,
+      isStarter: false,
+    };
+    const substituteLineup: Lineup = {
+      id: 'sub1',
+      gameId: 'g1',
+      side: 'away',
+      battingOrder: 3,
+      playerName: '控え太郎',
+      position: 9,
+      cycle: 2,
+      enteredInning: 4,
+      isStarter: false,
+    };
+    const starterLineup3: Lineup = {
+      id: 'starter3',
+      gameId: 'g1',
+      side: 'away',
+      battingOrder: 3,
+      playerName: '田中',
+      position: 7,
+      cycle: 1,
+      enteredInning: 1,
+      isStarter: true,
+    };
+    const lineups: Lineup[] = [
+      { ...lineup, id: 'l1' },
+      starterLineup3,
+      substituteLineup,
+      benchLineup,
+    ];
+    const pas: PlateAppearance[] = [
+      { ...pa('単打'), topBottom: 'top', batterLineupId: 'l1' },
+      { ...pa('二塁打'), topBottom: 'top', batterLineupId: 'starter3' },
+      { ...pa('ゴロ'), topBottom: 'top', batterLineupId: 'sub1' },
+    ];
+    const stats = computeAllBattingStats(pas, lineups, 'top');
+    // 打席1(鈴木) + 打順3(代替後の控え太郎) = 2行、控え事前登録(battingOrder:10)は含まれない
+    expect(stats.every((s) => s.pa > 0)).toBe(true);
+    const benchStats = stats.filter((s) => s.playerName === '控え太郎' && s.battingOrder === 10);
+    expect(benchStats).toHaveLength(0);
+  });
 });

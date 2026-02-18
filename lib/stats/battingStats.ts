@@ -104,7 +104,8 @@ export function computeAllBattingStats(
     }
   }
 
-  return results;
+  // 打席ゼロの控え選手(事前登録のみで未出場)を除外する
+  return results.filter((s) => s.pa > 0);
 }
 
 function round3(n: number): number {
