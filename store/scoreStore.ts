@@ -69,10 +69,17 @@ function snapshot(state: ScoreState): ScoreSnapshot {
   };
 }
 
+// ファウル対応のストライクカウント（2ストライクまでのファウルはストライクとして計算）
 function countStrikes(pitches: Pitch[]): number {
-  return pitches.filter(
-    (p) => p.type === 'strike_swinging' || p.type === 'strike_looking',
-  ).length;
+  let strikes = 0;
+  for (const pitch of pitches) {
+    if (pitch.type === 'strike_swinging' || pitch.type === 'strike_looking') {
+      strikes += 1;
+    } else if (pitch.type === 'foul' && strikes < 2) {
+      strikes += 1;
+    }
+  }
+  return strikes;
 }
 
 function countBalls(pitches: Pitch[]): number {
