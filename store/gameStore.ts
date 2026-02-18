@@ -26,6 +26,7 @@ interface GameState {
   addGame: (game: Game) => void;
   syncToSupabase: (gameId: string) => Promise<void>;
   loadFromSupabase: (userId: string) => Promise<void>;
+  clearAll: () => void;
 }
 
 export const useGameStore = create<GameState>()(
@@ -144,6 +145,11 @@ export const useGameStore = create<GameState>()(
         } catch (error) {
           throw error;
         }
+      },
+
+      // ローカルストアを全クリア（ログアウト時に呼び出す）
+      clearAll: () => {
+        set({ games: [], lineups: {} });
       },
 
       // Supabase から全試合を取得してローカルストアに統合する

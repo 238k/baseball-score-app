@@ -47,7 +47,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-zinc-900 mb-1">ログイン</h1>
-        <p className="text-sm text-zinc-500 mb-8">野球スコアブックにサインイン</p>
+        <p className="text-sm text-zinc-500 mb-8">チームアカウントでサインイン</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1">

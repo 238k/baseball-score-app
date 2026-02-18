@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [teamName, setTeamName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
@@ -20,6 +21,14 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
 
+    if (teamName.trim().length === 0) {
+      setError('チーム名を入力してください');
+      return;
+    }
+    if (teamName.trim().length > 50) {
+      setError('チーム名は50文字以内で入力してください');
+      return;
+    }
     if (password !== passwordConfirm) {
       setError('パスワードが一致しません');
       return;
@@ -32,7 +41,11 @@ export default function SignupPage() {
     setIsLoading(true);
     try {
       const supabase = createClient();
-      const { error: authError } = await supabase.auth.signUp({ email, password });
+      const { error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { team_name: teamName.trim() } },
+      });
 
       if (authError) {
         setError(authError.message === 'User already registered'
@@ -59,10 +72,24 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-zinc-900 mb-1">新規登録</h1>
-        <p className="text-sm text-zinc-500 mb-8">野球スコアブックのアカウントを作成</p>
+        <h1 className="text-2xl font-bold text-zinc-900 mb-1">チームアカウント登録</h1>
+        <p className="text-sm text-zinc-500 mb-8">野球スコアブックのチームアカウントを作成</p>
 
         <form onSubmit={handleSignup} className="space-y-4">
+          <div className="space-y-1">
+            <Label htmlFor="team-name" className="text-zinc-700">チーム名</Label>
+            <Input
+              id="team-name"
+              type="text"
+              required
+              autoComplete="organization"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              placeholder="例: 東京ベースボールクラブ"
+              className="min-h-[44px]"
+            />
+          </div>
+
           <div className="space-y-1">
             <Label htmlFor="email" className="text-zinc-700">メールアドレス</Label>
             <Input
@@ -111,7 +138,7 @@ export default function SignupPage() {
             disabled={isLoading}
             className="w-full min-h-[44px] rounded-md bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition-colors"
           >
-            {isLoading ? '登録中...' : 'アカウントを作成'}
+            {isLoading ? '登録中...' : 'チームアカウントを作成'}
           </Button>
         </form>
 

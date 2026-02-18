@@ -30,11 +30,27 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // /games/** は認証必須
-  if (pathname.startsWith('/games') && !user) {
+  // リダイレクト時にもリフレッシュ済みクッキーを引き継ぐヘルパー
+  function redirectWithCookies(pathname: string) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
+    url.pathname = pathname;
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach(({ name, value }) => {
+      redirectResponse.cookies.set(name, value);
+    });
+    return redirectResponse;
+  }
+
+  // 未認証: `/` と `/games/**` は /login へリダイレクト
+  const isProtected = pathname === '/' || pathname.startsWith('/games');
+  if (isProtected && !user) {
+    return redirectWithCookies('/login');
+  }
+
+  // 認証済み: ログイン・サインアップページは / へリダイレクト
+  const isAuthPage = pathname === '/login' || pathname === '/signup';
+  if (isAuthPage && user) {
+    return redirectWithCookies('/');
   }
 
   return supabaseResponse;

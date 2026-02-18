@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
+import { useGameStore } from '@/store/gameStore';
 
 interface AuthState {
   user: User | null;
+  teamName: string | null;
   isLoading: boolean;
   logout: () => Promise<void>;
 }
@@ -35,7 +37,11 @@ export function useAuth(): AuthState {
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
+    // ローカル永続化ストアをクリアして別ユーザーのデータが残らないようにする
+    useGameStore.getState().clearAll();
   };
 
-  return { user, isLoading, logout };
+  const teamName = (user?.user_metadata?.team_name as string | undefined) ?? null;
+
+  return { user, teamName, isLoading, logout };
 }
