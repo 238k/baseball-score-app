@@ -19,9 +19,12 @@ function countBalls(pitches: Pitch[]): number {
 }
 
 function countStrikes(pitches: Pitch[]): number {
-  return pitches.filter(
+  const nonFoulStrikes = pitches.filter(
     (p) => p.type === 'strike_swinging' || p.type === 'strike_looking',
   ).length;
+  if (nonFoulStrikes >= 2) return 2;
+  const fouls = pitches.filter((p) => p.type === 'foul').length;
+  return Math.min(nonFoulStrikes + fouls, 2);
 }
 
 export function GameStatusPanel({

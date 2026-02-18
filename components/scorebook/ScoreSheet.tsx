@@ -14,8 +14,8 @@ const POSITION_LABELS: Record<FieldingPosition, string> = {
 export interface ScoreSheetProps {
   /** 攻撃チームの側（表=away, 裏=home） */
   attackingSide: 'home' | 'away';
-  /** 各打順の現在の選手（9人分、null は未登録） */
-  attackingLineup: (Lineup | null)[];
+  /** 各打順の全選手（9要素、各要素はサイクル昇順の Lineup 配列。空配列=未登録） */
+  attackingLineup: Lineup[][];
   /** 完了した打席の一覧（全打席を渡す。内部でフィルタリング） */
   plateAppearances: PlateAppearance[];
   /** 現在のイニング */
@@ -83,9 +83,11 @@ export function ScoreSheet({
           </div>
 
           {/* 選手行 */}
-          {attackingLineup.map((player, index) => {
+          {attackingLineup.map((players, index) => {
             const order = index + 1;
             const isCurrent = isAttacking && index === currentBatterIndex;
+            const currentPlayer = players.length > 0 ? players[players.length - 1] : null;
+            const formerPlayers = players.length > 1 ? players.slice(0, players.length - 1) : [];
             return (
               <div
                 key={order}
@@ -102,15 +104,22 @@ export function ScoreSheet({
 
                 {/* 守備位置 */}
                 <span className="text-[10px] text-zinc-400 w-5 flex-shrink-0 text-center">
-                  {player ? POSITION_LABELS[player.position] : '-'}
+                  {currentPlayer ? POSITION_LABELS[currentPlayer.position] : '-'}
                 </span>
 
-                {/* 選手名 */}
-                <span className={`text-xs font-medium truncate max-w-[80px] ${
-                  isCurrent ? 'text-blue-700' : 'text-zinc-700'
-                }`}>
-                  {player?.playerName ?? `打者${order}`}
-                </span>
+                {/* 選手名（交代前→現在の順で縦積み） */}
+                <div className="flex flex-col justify-center min-w-0 flex-1">
+                  {formerPlayers.map((p) => (
+                    <span key={p.id} className="text-[10px] text-zinc-400 truncate max-w-[80px] line-through">
+                      {p.playerName}
+                    </span>
+                  ))}
+                  <span className={`text-xs font-medium truncate max-w-[80px] ${
+                    isCurrent ? 'text-blue-700' : 'text-zinc-700'
+                  }`}>
+                    {currentPlayer?.playerName ?? `打者${order}`}
+                  </span>
+                </div>
               </div>
             );
           })}

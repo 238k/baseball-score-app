@@ -16,21 +16,31 @@ interface PrintViewProps {
 }
 
 export function PrintView({ gameId }: PrintViewProps) {
-  const { getGame, lineups: allLineups, getCurrentBatter } = useGameStore();
+  const { getGame, lineups: allLineups } = useGameStore();
   const { plateAppearances, currentInning } = useScoreStore();
 
   const game = getGame(gameId);
   const lineups = useMemo(() => allLineups[gameId] ?? [], [allLineups, gameId]);
 
-  // 各チームの現在の打順（cycle 最大の選手）
+  // 各チームの全打順（交代履歴含む、サイクル昇順）
   const awayLineup = useMemo(
-    () => Array.from({ length: 9 }, (_, i) => getCurrentBatter(gameId, 'away', i + 1) ?? null),
-    [gameId, getCurrentBatter, lineups], // eslint-disable-line react-hooks/exhaustive-deps
+    () => Array.from({ length: 9 }, (_, i) => {
+      const battingOrder = i + 1;
+      return lineups
+        .filter((l) => l.side === 'away' && l.battingOrder === battingOrder)
+        .sort((a, b) => a.cycle - b.cycle);
+    }),
+    [lineups],
   );
 
   const homeLineup = useMemo(
-    () => Array.from({ length: 9 }, (_, i) => getCurrentBatter(gameId, 'home', i + 1) ?? null),
-    [gameId, getCurrentBatter, lineups], // eslint-disable-line react-hooks/exhaustive-deps
+    () => Array.from({ length: 9 }, (_, i) => {
+      const battingOrder = i + 1;
+      return lineups
+        .filter((l) => l.side === 'home' && l.battingOrder === battingOrder)
+        .sort((a, b) => a.cycle - b.cycle);
+    }),
+    [lineups],
   );
 
   // 成績計算（stats/page.tsx と同じロジック）

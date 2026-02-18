@@ -97,23 +97,29 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
   const gameLineups = useMemo(() => lineups[gameId] ?? [], [lineups, gameId]);
 
-  // 各打順の現在の選手（cycle 最大）を取得（攻撃チーム）
+  // 各打順の全選手（サイクル昇順）を取得（攻撃チーム）
   const attackingLineup = useMemo(() => {
     return Array.from({ length: 9 }, (_, i) => {
-      return getCurrentBatter(gameId, attackingSide, i + 1) ?? null;
+      const battingOrder = i + 1;
+      return gameLineups
+        .filter((l) => l.side === attackingSide && l.battingOrder === battingOrder)
+        .sort((a, b) => a.cycle - b.cycle);
     });
-  }, [gameId, attackingSide, getCurrentBatter, gameLineups]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gameId, attackingSide, gameLineups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // スコアシートで閲覧中のチームのラインナップ
   const viewingLineup = useMemo(() => {
     if (viewingSide === attackingSide) return attackingLineup;
     return Array.from({ length: 9 }, (_, i) => {
-      return getCurrentBatter(gameId, viewingSide, i + 1) ?? null;
+      const battingOrder = i + 1;
+      return gameLineups
+        .filter((l) => l.side === viewingSide && l.battingOrder === battingOrder)
+        .sort((a, b) => a.cycle - b.cycle);
     });
-  }, [gameId, viewingSide, attackingSide, attackingLineup, getCurrentBatter, gameLineups]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gameId, viewingSide, attackingSide, attackingLineup, gameLineups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 現在の打者（ラインナップが空の場合はダミー）
-  const currentBatterLineup = attackingLineup[currentBatterIndex] ?? null;
+  const currentBatterLineup = getCurrentBatter(gameId, attackingSide, currentBatterIndex + 1) ?? null;
   const batterName = currentBatterLineup?.playerName ?? `打者${currentBatterIndex + 1}`;
   const battingOrder = currentBatterLineup?.battingOrder ?? currentBatterIndex + 1;
   const batterLineupId = currentBatterLineup?.id ?? `dummy-${currentBatterIndex}`;
