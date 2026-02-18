@@ -236,7 +236,6 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
             awayTeamName={game.awayTeamName}
             homeScore={homeScore}
             awayScore={awayScore}
-            pitches={pitches}
           />
 
           {/* 右下: 操作UI */}
