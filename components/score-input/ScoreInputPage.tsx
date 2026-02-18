@@ -22,10 +22,12 @@ interface ScoreInputPageProps {
 }
 
 export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
-  const { getGame, lineups, getCurrentBatter, syncToSupabase } = useGameStore();
+  const { getGame, lineups, getCurrentBatter, syncToSupabase, finishGame } = useGameStore();
   const { user } = useAuth();
   const isOnline = useOnlineSync();
   const [isSubstitutionOpen, setIsSubstitutionOpen] = useState(false);
+  const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
+  const [finishReason, setFinishReason] = useState('');
   const {
     initGame,
     gameId: storeGameId,
@@ -66,9 +68,16 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
     syncToSupabase(gameId).catch(() => {});
   }, [gameId, user, isOnline, syncToSupabase]);
 
-  // キーボードショートカット: Cmd+Z=Undo, Cmd+Shift+Z / Ctrl+Y=Redo
+  // キーボードショートカット: Cmd+Z=Undo, Cmd+Shift+Z / Ctrl+Y=Redo, Escape=ダイアログを閉じる
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isFinishDialogOpen) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setIsFinishDialogOpen(false);
+        }
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         redo();
@@ -82,7 +91,7 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [redo, undo]);
+  }, [redo, undo, isFinishDialogOpen]);
 
   // 現在の攻撃チーム
   const attackingSide: 'home' | 'away' = currentTopBottom === 'top' ? 'away' : 'home';
@@ -247,80 +256,184 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
 
           {/* 右下: 操作UI */}
           <div className="flex-1 overflow-y-auto bg-zinc-50">
-            {/* 現在打者情報 */}
-            <CurrentBatterInfo
-              battingOrder={battingOrder}
-              batterName={batterName}
-            />
-
-            {/* 交代ボタン（pitching フェーズのみ） */}
-            {phase === 'pitching' && (
-              <div className="px-4 pt-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsSubstitutionOpen(true)}
-                  className="min-h-[40px] px-4 rounded-lg text-zinc-600 text-sm font-medium"
-                >
-                  選手交代
-                </Button>
+            {game.status !== 'in_progress' ? (
+              /* 試合終了後: 読み取り専用表示 */
+              <div className="p-6 flex flex-col items-center gap-4 text-center">
+                <p className="text-lg font-bold text-zinc-800">試合終了</p>
+                <p className="text-sm text-zinc-500">
+                  {game.finishReason ?? '正規終了'}
+                </p>
+                <div className="flex flex-col gap-2 w-full mt-2">
+                  <Link
+                    href={`/games/${gameId}/stats`}
+                    className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-zinc-800 text-white text-sm font-medium hover:bg-zinc-700 transition-colors"
+                  >
+                    成績を見る
+                  </Link>
+                  <Link
+                    href={`/games/${gameId}/print`}
+                    className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border border-zinc-300 text-zinc-600 text-sm font-medium hover:bg-zinc-100 transition-colors"
+                  >
+                    印刷
+                  </Link>
+                </div>
+                {/* 打席ログ */}
+                <div className="border-t border-zinc-200 w-full mt-2">
+                  <ScoreLog plateAppearances={plateAppearances} />
+                </div>
               </div>
-            )}
-
-            {/* 入力パネル */}
-            {phase === 'inning_end' ? (
-              <div className="p-6 flex flex-col items-center gap-4">
-                <p className="text-lg font-bold text-zinc-700">3アウト — 攻守交代</p>
-                <Button
-                  type="button"
-                  onClick={advanceInning}
-                  className="min-h-[56px] px-10 rounded-lg bg-zinc-800 text-white font-bold text-lg hover:bg-zinc-700 active:opacity-70 transition-colors"
-                >
-                  攻守交代
-                </Button>
-              </div>
-            ) : phase === 'runner_advance' ? (
-              <RunnerAdvancePanel
-                runners={runnersForAdvancePanel}
-                batterName={batterName}
-                batterDest={pendingBatterDestination}
-                onConfirm={handleConfirmRunners}
-              />
-            ) : phase === 'result' ? (
-              <ResultInputPanel onResult={handleResult} />
             ) : (
-              <PitchInputPanel onPitch={handlePitch} />
+              /* 試合進行中: 通常の入力UI */
+              <>
+                {/* 現在打者情報 */}
+                <CurrentBatterInfo
+                  battingOrder={battingOrder}
+                  batterName={batterName}
+                />
+
+                {/* 交代ボタン（pitching フェーズのみ） */}
+                {phase === 'pitching' && (
+                  <div className="px-4 pt-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsSubstitutionOpen(true)}
+                      className="min-h-[40px] px-4 rounded-lg text-zinc-600 text-sm font-medium"
+                    >
+                      選手交代
+                    </Button>
+                  </div>
+                )}
+
+                {/* 入力パネル */}
+                {phase === 'inning_end' ? (
+                  <div className="p-6 flex flex-col items-center gap-4">
+                    <p className="text-lg font-bold text-zinc-700">3アウト — 攻守交代</p>
+                    <Button
+                      type="button"
+                      onClick={advanceInning}
+                      className="min-h-[56px] px-10 rounded-lg bg-zinc-800 text-white font-bold text-lg hover:bg-zinc-700 active:opacity-70 transition-colors"
+                    >
+                      攻守交代
+                    </Button>
+                  </div>
+                ) : phase === 'runner_advance' ? (
+                  <RunnerAdvancePanel
+                    runners={runnersForAdvancePanel}
+                    batterName={batterName}
+                    batterDest={pendingBatterDestination}
+                    onConfirm={handleConfirmRunners}
+                  />
+                ) : phase === 'result' ? (
+                  <ResultInputPanel onResult={handleResult} />
+                ) : (
+                  <PitchInputPanel onPitch={handlePitch} />
+                )}
+
+                {/* Undo / Redo ボタン */}
+                <div className="px-4 pb-2 flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={undo}
+                    disabled={undoStack.length === 0}
+                    className="flex-1 min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
+                  >
+                    ↩ 取り消し
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={redo}
+                    disabled={redoStack.length === 0}
+                    className="flex-1 min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
+                  >
+                    ↪ やり直し
+                  </Button>
+                </div>
+
+                {/* 試合終了ボタン */}
+                <div className="px-4 pb-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsFinishDialogOpen(true)}
+                    className="w-full min-h-[40px] rounded-lg text-red-600 border-red-200 hover:bg-red-50 text-sm font-medium"
+                  >
+                    試合を終了する
+                  </Button>
+                </div>
+
+                {/* 打席ログ */}
+                <div className="border-t border-zinc-200">
+                  <ScoreLog plateAppearances={plateAppearances} />
+                </div>
+              </>
             )}
-
-            {/* Undo / Redo ボタン */}
-            <div className="px-4 pb-4 flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={undo}
-                disabled={undoStack.length === 0}
-                className="flex-1 min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
-              >
-                ↩ 取り消し
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={redo}
-                disabled={redoStack.length === 0}
-                className="flex-1 min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
-              >
-                ↪ やり直し
-              </Button>
-            </div>
-
-            {/* 打席ログ */}
-            <div className="border-t border-zinc-200">
-              <ScoreLog plateAppearances={plateAppearances} />
-            </div>
           </div>
         </div>
       </div>
+
+      {/* 試合終了確認ダイアログ */}
+      {isFinishDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="finish-dialog-title"
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h2 id="finish-dialog-title" className="text-lg font-bold text-zinc-900 mb-2">
+              試合を終了しますか？
+            </h2>
+            <p className="text-sm text-zinc-500 mb-4">
+              終了すると投球・結果の入力ができなくなります。
+            </p>
+
+            <div className="mb-4">
+              <label htmlFor="finish-reason" className="block text-xs font-medium text-zinc-600 mb-1">
+                終了理由（任意）
+              </label>
+              <select
+                id="finish-reason"
+                value={finishReason}
+                onChange={(e) => setFinishReason(e.target.value)}
+                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              >
+                <option value="">正規終了</option>
+                <option value="コールドゲーム">コールドゲーム</option>
+                <option value="降雨中止">降雨中止</option>
+                <option value="日没">日没</option>
+                <option value="その他">その他</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsFinishDialogOpen(false)}
+                className="flex-1 min-h-[44px] rounded-lg text-zinc-600 text-sm"
+              >
+                キャンセル
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  finishGame(gameId, finishReason || undefined);
+                  setIsFinishDialogOpen(false);
+                  if (user && isOnline) {
+                    syncToSupabase(gameId).catch(() => {});
+                  }
+                }}
+                className="flex-1 min-h-[44px] rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+              >
+                終了する
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 選手交代パネル */}
       <SubstitutionPanel

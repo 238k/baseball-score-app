@@ -38,6 +38,7 @@ type GameRow = {
   home_team_name: string;
   away_team_name: string;
   status: 'in_progress' | 'completed';
+  finish_reason: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -51,6 +52,7 @@ type GameInsert = {
   home_team_name: string;
   away_team_name: string;
   status?: 'in_progress' | 'completed';
+  finish_reason?: string | null;
   created_at?: string;
   updated_at?: string;
 };

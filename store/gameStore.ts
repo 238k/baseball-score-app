@@ -23,6 +23,7 @@ interface GameState {
   getGame: (gameId: string) => Game | undefined;
   getCurrentBatter: (gameId: string, side: 'home' | 'away', battingOrder: number) => Lineup | undefined;
   substitutePlayer: (options: SubstituteOptions) => void;
+  finishGame: (gameId: string, reason?: string) => void;
   addGame: (game: Game) => void;
   syncToSupabase: (gameId: string) => Promise<void>;
   loadFromSupabase: () => Promise<void>;
@@ -120,6 +121,16 @@ export const useGameStore = create<GameState>()(
             },
           });
         }
+      },
+
+      finishGame: (gameId, reason) => {
+        set((state) => ({
+          games: state.games.map((g) =>
+            g.id === gameId
+              ? { ...g, status: 'completed' as const, finishReason: reason, updatedAt: new Date().toISOString() }
+              : g
+          ),
+        }));
       },
 
       // Supabase から取得したゲームをローカルストアに追加

@@ -14,6 +14,7 @@ export interface Game {
   homeTeamName: string;
   awayTeamName: string;
   status: GameStatus;
+  finishReason?: string; // 試合終了理由（コールドゲーム・降雨中止など）
   createdAt: string;
   updatedAt: string;
 }

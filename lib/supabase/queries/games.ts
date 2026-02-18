@@ -10,6 +10,7 @@ function toGame(row: {
   home_team_name: string;
   away_team_name: string;
   status: 'in_progress' | 'completed';
+  finish_reason?: string | null;
   created_at: string;
   updated_at: string;
 }): Game {
@@ -22,6 +23,7 @@ function toGame(row: {
     homeTeamName: row.home_team_name,
     awayTeamName: row.away_team_name,
     status: row.status,
+    finishReason: row.finish_reason ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -51,6 +53,7 @@ export async function upsertGame(game: Game): Promise<void> {
     home_team_name: game.homeTeamName,
     away_team_name: game.awayTeamName,
     status: game.status,
+    finish_reason: game.finishReason ?? null,
     updated_at: new Date().toISOString(),
   });
 
