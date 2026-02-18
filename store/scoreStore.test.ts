@@ -21,6 +21,7 @@ function resetStore() {
     pendingBatterLineupId: null,
     pendingBatterDestination: null,
     undoStack: [],
+    redoStack: [],
   });
 }
 
@@ -301,6 +302,39 @@ describe('scoreStore', () => {
       expect(useScoreStore.getState().phase).toBe('runner_advance');
       useScoreStore.getState().undo();
       expect(useScoreStore.getState().phase).toBe('result');
+    });
+  });
+
+  describe('redo', () => {
+    it('undo した操作を redo で復元できる', () => {
+      useScoreStore.getState().recordPitch('ball', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      expect(useScoreStore.getState().pitches).toHaveLength(1);
+      useScoreStore.getState().undo();
+      expect(useScoreStore.getState().pitches).toHaveLength(0);
+      useScoreStore.getState().redo();
+      expect(useScoreStore.getState().pitches).toHaveLength(1);
+    });
+
+    it('redoStack が空のときは何もしない', () => {
+      expect(() => useScoreStore.getState().redo()).not.toThrow();
+    });
+
+    it('新しい操作を行うと redoStack がクリアされる', () => {
+      useScoreStore.getState().recordPitch('ball', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().undo();
+      expect(useScoreStore.getState().redoStack).toHaveLength(1);
+      // 新しい操作
+      useScoreStore.getState().recordPitch('strike_looking', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      expect(useScoreStore.getState().redoStack).toHaveLength(0);
+    });
+
+    it('undo → redo で undoStack に現在の状態が積まれる', () => {
+      useScoreStore.getState().recordPitch('ball', BATTER.batterLineupId, BATTER.batterName, BATTER.battingOrder);
+      useScoreStore.getState().undo();
+      const undoLenBefore = useScoreStore.getState().undoStack.length;
+      useScoreStore.getState().redo();
+      expect(useScoreStore.getState().undoStack).toHaveLength(undoLenBefore + 1);
+      expect(useScoreStore.getState().redoStack).toHaveLength(0);
     });
   });
 

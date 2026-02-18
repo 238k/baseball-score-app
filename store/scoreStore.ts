@@ -33,6 +33,7 @@ interface ScoreState {
   pendingBatterDestination: 1 | 2 | 3 | 4 | null; // null = 打者アウト
 
   undoStack: ScoreSnapshot[];
+  redoStack: ScoreSnapshot[];
 
   // アクション
   initGame: (gameId: string) => void;
@@ -46,6 +47,7 @@ interface ScoreState {
   confirmRunners: (destinations: Record<string, RunnerDestination>) => void;
   advanceInning: () => void;
   undo: () => void;
+  redo: () => void;
 }
 
 function snapshot(state: ScoreState): ScoreSnapshot {
@@ -176,6 +178,7 @@ export const useScoreStore = create<ScoreState>()(
   pendingBatterLineupId: null,
   pendingBatterDestination: null,
   undoStack: [],
+  redoStack: [],
 
   initGame: (gameId) => {
     set({
@@ -194,6 +197,7 @@ export const useScoreStore = create<ScoreState>()(
       pendingBatterLineupId: null,
       pendingBatterDestination: null,
       undoStack: [],
+      redoStack: [],
     });
   },
 
@@ -227,6 +231,7 @@ export const useScoreStore = create<ScoreState>()(
         phase: newPhase,
         sequenceCounter: state.sequenceCounter + 1,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+        redoStack: [],
       });
       return;
     }
@@ -259,6 +264,7 @@ export const useScoreStore = create<ScoreState>()(
         homeScore: newHomeScore,
         awayScore: newAwayScore,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+        redoStack: [],
       });
       return;
     }
@@ -291,6 +297,7 @@ export const useScoreStore = create<ScoreState>()(
         homeScore: newHomeScore,
         awayScore: newAwayScore,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+        redoStack: [],
       });
       return;
     }
@@ -301,6 +308,7 @@ export const useScoreStore = create<ScoreState>()(
         pitches: updatedPitches,
         phase: 'result',
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+        redoStack: [],
       });
       return;
     }
@@ -309,6 +317,7 @@ export const useScoreStore = create<ScoreState>()(
     set({
       pitches: updatedPitches,
       undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+      redoStack: [],
     });
   },
 
@@ -332,6 +341,7 @@ export const useScoreStore = create<ScoreState>()(
         phase: 'inning_end',
         sequenceCounter: state.sequenceCounter + 1,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+        redoStack: [],
       });
       return;
     }
@@ -354,6 +364,7 @@ export const useScoreStore = create<ScoreState>()(
         pendingBatterDestination: batterDest,
         sequenceCounter: state.sequenceCounter + 1,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+        redoStack: [],
       });
     } else {
       // 走者なし + 打者アウト → 即次打者へ
@@ -365,6 +376,7 @@ export const useScoreStore = create<ScoreState>()(
         phase: 'pitching',
         sequenceCounter: state.sequenceCounter + 1,
         undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+        redoStack: [],
       });
     }
   },
@@ -421,6 +433,7 @@ export const useScoreStore = create<ScoreState>()(
       homeScore: newHomeScore,
       awayScore: newAwayScore,
       undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+      redoStack: [],
     });
   },
 
@@ -443,6 +456,7 @@ export const useScoreStore = create<ScoreState>()(
       pendingBatterLineupId: null,
       pendingBatterDestination: null,
       undoStack: [...state.undoStack.slice(-MAX_UNDO_HISTORY + 1), snap],
+      redoStack: [],
     });
   },
 
@@ -450,6 +464,7 @@ export const useScoreStore = create<ScoreState>()(
     const state = get();
     if (state.undoStack.length === 0) return;
 
+    const currentSnap = snapshot(state);
     const prev = state.undoStack[state.undoStack.length - 1];
     set({
       currentInning: prev.currentInning,
@@ -466,12 +481,38 @@ export const useScoreStore = create<ScoreState>()(
       homeScore: prev.homeScore,
       awayScore: prev.awayScore,
       undoStack: state.undoStack.slice(0, -1),
+      redoStack: [...state.redoStack, currentSnap],
+    });
+  },
+
+  redo: () => {
+    const state = get();
+    if (state.redoStack.length === 0) return;
+
+    const currentSnap = snapshot(state);
+    const next = state.redoStack[state.redoStack.length - 1];
+    set({
+      currentInning: next.currentInning,
+      currentTopBottom: next.currentTopBottom,
+      currentBatterIndex: next.currentBatterIndex,
+      outs: next.outs,
+      runnersOnBase: { ...next.runnersOnBase },
+      pitches: [...next.pitches],
+      plateAppearances: [...next.plateAppearances],
+      phase: next.phase,
+      sequenceCounter: next.sequenceCounter,
+      pendingBatterLineupId: next.pendingBatterLineupId,
+      pendingBatterDestination: next.pendingBatterDestination,
+      homeScore: next.homeScore,
+      awayScore: next.awayScore,
+      undoStack: [...state.undoStack, currentSnap],
+      redoStack: state.redoStack.slice(0, -1),
     });
   },
 }),
 {
   name: 'baseball-score-score-store',
-  // undoStack・pitches はセッション揮発性なので永続化しない
+  // undoStack・redoStack・pitches はセッション揮発性なので永続化しない
   partialize: (state) => ({
     gameId: state.gameId,
     currentInning: state.currentInning,

@@ -44,7 +44,9 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
     confirmRunners,
     advanceInning,
     undo,
+    redo,
     undoStack,
+    redoStack,
     pendingBatterDestination,
   } = useScoreStore();
 
@@ -63,6 +65,24 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
     if (!user || !isOnline) return;
     syncToSupabase(gameId).catch(() => {});
   }, [gameId, user, isOnline, syncToSupabase]);
+
+  // キーボードショートカット: Cmd+Z=Undo, Cmd+Shift+Z / Ctrl+Y=Redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        redo();
+      } else if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+      } else if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [redo, undo]);
 
   // 現在の攻撃チーム
   const attackingSide: 'home' | 'away' = currentTopBottom === 'top' ? 'away' : 'home';
@@ -223,16 +243,25 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
               <PitchInputPanel onPitch={handlePitch} />
             )}
 
-            {/* Undo ボタン */}
-            <div className="px-4 pb-4">
+            {/* Undo / Redo ボタン */}
+            <div className="px-4 pb-4 flex gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={undo}
                 disabled={undoStack.length === 0}
-                className="w-full min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
+                className="flex-1 min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
               >
-                ↩ 取り消し（Undo）
+                ↩ 取り消し
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={redo}
+                disabled={redoStack.length === 0}
+                className="flex-1 min-h-[44px] rounded-lg text-zinc-600 text-sm font-medium hover:bg-zinc-100 disabled:opacity-30"
+              >
+                ↪ やり直し
               </Button>
             </div>
 
