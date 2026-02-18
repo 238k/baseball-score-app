@@ -22,8 +22,11 @@ export function useOnlineSync(): boolean {
       // getState() で最新の games を取得（依存配列から除外するため）
       const { games, syncToSupabase } = useGameStore.getState();
       for (const game of games) {
-        syncToSupabase(game.id).catch(() => {
-          // 同期エラーは無視してローカルデータを継続利用
+        syncToSupabase(game.id).catch((err) => {
+          // オンライン復帰時のバッチ同期エラーはローカルデータを継続利用
+          if (process.env.NODE_ENV === 'development') {
+            console.error('[SyncError] useOnlineSync:', err);
+          }
         });
       }
     }

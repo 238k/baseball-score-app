@@ -8,8 +8,10 @@ import { TeamInfoSection } from './TeamInfoSection';
 import { LineupSection, createInitialLineup } from './LineupSection';
 import { useGameStore } from '@/store/gameStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useSyncError } from '@/hooks/useSyncError';
 import type { FieldingPosition } from '@/types/game';
 import { Button } from '@/components/ui/button';
+import { SyncErrorBanner } from '@/components/ui/SyncErrorBanner';
 
 // バリデーションスキーマ
 const CreateGameSchema = z.object({
@@ -31,6 +33,7 @@ export function GameSetupForm() {
   const router = useRouter();
   const { createGame, addLineupsForGame, syncToSupabase } = useGameStore();
   const { user, teamId } = useAuth();
+  const { syncError, clearSyncError, syncWithNotification } = useSyncError();
 
   const [teamInfo, setTeamInfo] = useState<TeamInfoValues>({
     homeTeamName: '',
@@ -163,7 +166,7 @@ export function GameSetupForm() {
 
     // Supabase に非同期で同期（認証済み・オフライン時はローカル保存で継続）
     if (user) {
-      syncToSupabase(game.id).catch(() => {});
+      void syncWithNotification(() => syncToSupabase(game.id));
     }
 
     router.push(`/games/${game.id}`);
@@ -171,6 +174,9 @@ export function GameSetupForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {syncError && (
+        <SyncErrorBanner message={syncError} onClose={clearSyncError} />
+      )}
       <TeamInfoSection
         values={teamInfo}
         errors={teamInfoErrors}

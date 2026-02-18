@@ -6,8 +6,10 @@ import { useGameStore } from '@/store/gameStore';
 import { useScoreStore } from '@/store/scoreStore';
 import { useAuth } from '@/hooks/useAuth';
 import { useOnlineSync } from '@/hooks/useOnlineSync';
+import { useSyncError } from '@/hooks/useSyncError';
 import { GameStatusPanel } from './GameStatusPanel';
 import { Button } from '@/components/ui/button';
+import { SyncErrorBanner } from '@/components/ui/SyncErrorBanner';
 import { CurrentBatterInfo } from './CurrentBatterInfo';
 import { PitchInputPanel } from './PitchInputPanel';
 import { ResultInputPanel } from './ResultInputPanel';
@@ -25,6 +27,7 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
   const { getGame, lineups, getCurrentBatter, syncToSupabase, finishGame } = useGameStore();
   const { user } = useAuth();
   const isOnline = useOnlineSync();
+  const { syncError, clearSyncError, syncWithNotification } = useSyncError();
   const [isSubstitutionOpen, setIsSubstitutionOpen] = useState(false);
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
   const [finishReason, setFinishReason] = useState('');
@@ -65,8 +68,8 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
   // マウント時に Supabase へ同期（認証済み・オンライン時のみ）
   useEffect(() => {
     if (!user || !isOnline) return;
-    syncToSupabase(gameId).catch(() => {});
-  }, [gameId, user, isOnline, syncToSupabase]);
+    void syncWithNotification(() => syncToSupabase(gameId));
+  }, [gameId, user, isOnline, syncToSupabase, syncWithNotification]);
 
   // キーボードショートカット: Cmd+Z=Undo, Cmd+Shift+Z / Ctrl+Y=Redo, Escape=ダイアログを閉じる
   useEffect(() => {
@@ -251,6 +254,13 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
             </Link>
           </div>
 
+          {/* 同期エラーバナー */}
+          {syncError && (
+            <div className="flex-shrink-0 px-3 py-2">
+              <SyncErrorBanner message={syncError} onClose={clearSyncError} />
+            </div>
+          )}
+
           {/* 右上: 試合状況パネル */}
           <GameStatusPanel
             inning={currentInning}
@@ -433,7 +443,7 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
                   finishGame(gameId, finishReason || undefined);
                   setIsFinishDialogOpen(false);
                   if (user && isOnline) {
-                    syncToSupabase(gameId).catch(() => {});
+                    void syncWithNotification(() => syncToSupabase(gameId));
                   }
                 }}
                 className="flex-1 min-h-[44px] rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
