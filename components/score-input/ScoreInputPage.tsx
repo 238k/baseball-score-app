@@ -236,6 +236,7 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
             awayTeamName={game.awayTeamName}
             homeScore={homeScore}
             awayScore={awayScore}
+            pitches={pitches}
           />
 
           {/* 右下: 操作UI */}
@@ -244,7 +245,6 @@ export function ScoreInputPage({ gameId }: ScoreInputPageProps) {
             <CurrentBatterInfo
               battingOrder={battingOrder}
               batterName={batterName}
-              pitches={pitches}
             />
 
             {/* 交代ボタン（pitching フェーズのみ） */}

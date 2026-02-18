@@ -1,5 +1,7 @@
 'use client';
 
+import type { Pitch } from '@/types/score';
+
 interface GameStatusPanelProps {
   inning: number;
   topBottom: 'top' | 'bottom';
@@ -9,6 +11,17 @@ interface GameStatusPanelProps {
   awayTeamName: string;
   homeScore: number;
   awayScore: number;
+  pitches: Pitch[];
+}
+
+function countBalls(pitches: Pitch[]): number {
+  return pitches.filter((p) => p.type === 'ball').length;
+}
+
+function countStrikes(pitches: Pitch[]): number {
+  return pitches.filter(
+    (p) => p.type === 'strike_swinging' || p.type === 'strike_looking',
+  ).length;
 }
 
 export function GameStatusPanel({
@@ -20,8 +33,11 @@ export function GameStatusPanel({
   awayTeamName,
   homeScore,
   awayScore,
+  pitches,
 }: GameStatusPanelProps) {
   const inningLabel = `${inning}回${topBottom === 'top' ? '表' : '裏'}`;
+  const balls = countBalls(pitches);
+  const strikes = Math.min(countStrikes(pitches), 2); // 2ストライクまで表示（3つ目は確定）
   const occupiedBases = ([1, 2, 3] as const).filter((base) => runnersOnBase[base] !== null);
   const baseLabelMap = { 1: '一塁', 2: '二塁', 3: '三塁' } as const;
   const runnerSummary = occupiedBases.length === 0
@@ -51,20 +67,49 @@ export function GameStatusPanel({
         </div>
       </div>
 
-      {/* アウト + ランナー */}
+      {/* BSO + ランナー */}
       <div className="flex items-center justify-between">
-        {/* アウト（B/S は CurrentBatterInfo に集約） */}
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-zinc-400">O</span>
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              aria-hidden="true"
-              className={`w-3.5 h-3.5 rounded-full border ${
-                i < outs ? 'bg-red-400 border-red-400' : 'bg-transparent border-zinc-500'
-              }`}
-            />
-          ))}
+        {/* BSO カウント */}
+        <div className="flex items-center gap-3">
+          {/* ボール */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-zinc-400">B</span>
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className={`w-3.5 h-3.5 rounded-full border ${
+                  i < balls ? 'bg-green-400 border-green-400' : 'bg-transparent border-zinc-500'
+                }`}
+              />
+            ))}
+          </div>
+          {/* ストライク */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-zinc-400">S</span>
+            {[0, 1].map((i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className={`w-3.5 h-3.5 rounded-full border ${
+                  i < strikes ? 'bg-amber-400 border-amber-400' : 'bg-transparent border-zinc-500'
+                }`}
+              />
+            ))}
+          </div>
+          {/* アウト */}
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-zinc-400">O</span>
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                className={`w-3.5 h-3.5 rounded-full border ${
+                  i < outs ? 'bg-red-400 border-red-400' : 'bg-transparent border-zinc-500'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* ランナーダイヤモンド */}

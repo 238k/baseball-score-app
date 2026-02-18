@@ -7,19 +7,20 @@
 - `GameStatusPanel`（右上・暗背景）: B/S/O をドット表示
 - `CurrentBatterInfo`（操作UI上部）: `B: 2 S: 1 F: 1 3球` のテキスト表示
 
-## 採用方針: 案B（CurrentBatterInfo に統一）
+## 採用方針: 案A（GameStatusPanel に統一）
 
-`GameStatusPanel` の BSO ドット表示を廃止し、`CurrentBatterInfo` に統一する。
+`GameStatusPanel` の BSO ドット表示はそのまま維持し、`CurrentBatterInfo` のカウント表示（B/S/F）を削除する。
+ファウル数（F）は不要。
 
 理由:
-- `CurrentBatterInfo` はファウル数(F)・総球数も表示しており情報量が多い
-- `GameStatusPanel` は試合全体状況（イニング・スコア・ランナー）に専念させる
+- ドット表示の方が直感的で視認性が高い
+- `CurrentBatterInfo` は打者名・打順の表示に専念させる
 
 ## 変更内容
 
-- `GameStatusPanel`: BSO ドット表示セクションを削除。`pitches` prop も不要になるため削除。
-- `CurrentBatterInfo`: 変更なし（現状のまま）
-- `ScoreInputPage`: `GameStatusPanel` への `pitches` prop を削除
+- `GameStatusPanel`: BSO ドット表示・`pitches` prop を維持（変更なし）
+- `CurrentBatterInfo`: B/S/F カウント表示と `pitches` prop を削除。打者名・打順のみ表示。
+- `ScoreInputPage`: `CurrentBatterInfo` への `pitches` prop を削除
 
 ## 影響範囲
 
