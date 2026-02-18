@@ -1,9 +1,38 @@
 // Supabase データベーステーブルの型定義
 // Supabase CLI の `supabase gen types typescript` で自動生成することも可能
 
+type TeamRow = {
+  id: string;
+  name: string;
+  created_by: string;
+  created_at: string;
+};
+
+type TeamInsert = {
+  id?: string;
+  name: string;
+  created_by: string;
+  created_at?: string;
+};
+
+type TeamMemberRow = {
+  team_id: string;
+  user_id: string;
+  role: 'owner' | 'member';
+  joined_at: string;
+};
+
+type TeamMemberInsert = {
+  team_id: string;
+  user_id: string;
+  role?: 'owner' | 'member';
+  joined_at?: string;
+};
+
 type GameRow = {
   id: string;
   user_id: string;
+  team_id: string | null;
   date: string;
   venue: string | null;
   home_team_name: string;
@@ -16,6 +45,7 @@ type GameRow = {
 type GameInsert = {
   id?: string;
   user_id: string;
+  team_id?: string | null;
   date: string;
   venue?: string | null;
   home_team_name: string;
@@ -43,6 +73,18 @@ type LineupInsert = LineupRow;
 export interface Database {
   public: {
     Tables: {
+      teams: {
+        Row: TeamRow;
+        Insert: TeamInsert;
+        Update: Partial<TeamInsert>;
+        Relationships: [];
+      };
+      team_members: {
+        Row: TeamMemberRow;
+        Insert: TeamMemberInsert;
+        Update: Partial<TeamMemberInsert>;
+        Relationships: [];
+      };
       games: {
         Row: GameRow;
         Insert: GameInsert;

@@ -25,7 +25,7 @@ interface GameState {
   substitutePlayer: (options: SubstituteOptions) => void;
   addGame: (game: Game) => void;
   syncToSupabase: (gameId: string) => Promise<void>;
-  loadFromSupabase: (userId: string) => Promise<void>;
+  loadFromSupabase: () => Promise<void>;
   clearAll: () => void;
 }
 
@@ -40,6 +40,7 @@ export const useGameStore = create<GameState>()(
         const game: Game = {
           id: crypto.randomUUID(),
           userId: input.userId,
+          teamId: input.teamId,
           date: input.date,
           venue: input.venue,
           homeTeamName: input.homeTeamName,
@@ -152,9 +153,9 @@ export const useGameStore = create<GameState>()(
         set({ games: [], lineups: {} });
       },
 
-      // Supabase から全試合を取得してローカルストアに統合する
-      loadFromSupabase: async (userId) => {
-        const remoteGames = await fetchGames(userId);
+      // Supabase から全試合を取得してローカルストアに統合する（RLS で自動フィルタリング）
+      loadFromSupabase: async () => {
+        const remoteGames = await fetchGames();
         set((state) => {
           const localIds = new Set(state.games.map((g) => g.id));
           const newGames = remoteGames.filter((g) => !localIds.has(g.id));

@@ -10,19 +10,19 @@ import { Button } from '@/components/ui/button';
 
 export default function Home() {
   const { games, loadFromSupabase } = useGameStore();
-  const { user, teamName, logout } = useAuth();
+  const { user, teamId, teamName, logout } = useAuth();
 
   useEffect(() => {
     if (user) {
-      loadFromSupabase(user.id).catch(() => {
+      loadFromSupabase().catch(() => {
         // ネットワークエラー時はローカルデータのまま表示を継続
       });
     }
   }, [user, loadFromSupabase]);
 
-  // 現在のログインユーザーの試合のみ表示（日付降順）
+  // 現在のログインユーザー（またはチームメンバー）の試合のみ表示（日付降順）
   const sortedGames = [...games]
-    .filter((game) => game.userId === user?.id)
+    .filter((game) => game.userId === user?.id || (teamId !== null && game.teamId === teamId))
     .sort((a, b) => b.date.localeCompare(a.date));
 
   return (

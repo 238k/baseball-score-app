@@ -8,6 +8,7 @@ export type SubstitutionType = '代打' | '代走' | '守備交代' | '投手交
 export interface Game {
   id: string;
   userId: string;
+  teamId?: string;
   date: string; // YYYY-MM-DD
   venue?: string;
   homeTeamName: string;
@@ -32,6 +33,7 @@ export interface Lineup {
 
 export interface CreateGameInput {
   userId: string;
+  teamId?: string;
   homeTeamName: string;
   awayTeamName: string;
   date: string;

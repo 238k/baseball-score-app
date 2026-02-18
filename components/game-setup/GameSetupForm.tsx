@@ -30,7 +30,7 @@ function createInitialLineupValues(): LineupValues {
 export function GameSetupForm() {
   const router = useRouter();
   const { createGame, addLineupsForGame, syncToSupabase } = useGameStore();
-  const { user } = useAuth();
+  const { user, teamId } = useAuth();
 
   const [teamInfo, setTeamInfo] = useState<TeamInfoValues>({
     homeTeamName: '',
@@ -138,6 +138,7 @@ export function GameSetupForm() {
 
     const game = createGame({
       userId: user?.id ?? 'local',
+      teamId: teamId ?? undefined,
       homeTeamName: teamInfo.homeTeamName,
       awayTeamName: teamInfo.awayTeamName,
       date: teamInfo.date,
